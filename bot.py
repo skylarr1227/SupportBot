@@ -1,47 +1,23 @@
+
 import discord
 from discord.ext import commands
-from google_measurement_protocol import event, report
-import aiohttp
+from discord.ext.commands import CommandError, MissingRequiredArgument
+from supabase-py import create_client, Client
+from discord_components import DiscordComponents, Button, ButtonStyle, InteractionType
+import os
+import asyncio
 
-
-TOKEN = 'nope'
-WEBHOOK_URL = 'bootie-flakes'
+TOKEN = ''
+SUPABASE_URL = ""
+SUPABASE_API_KEY = os(environ.get("SUPABASE_API_KEY")
 
 intents = discord.Intents.default()
 intents.messages = True
 intents.reactions = True
 intents.guilds = True
-intents.message_content = True  
-
+intents.message_content = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
-
-
-
-
-
-
-@bot.event
-async def on_ready():
-    await bot.wait_until_ready()
-    print(f'{bot.user.name} has connected to Discord!')
-
-@bot.event
-async def on_message(message):
-    if message.author == bot.user:
-        return
-
-    print(f"Message from {message.author}: {message.content}")
-
-    await bot.process_commands(message)
-
-@bot.event
-async def on_command_error(ctx, error):
-    if isinstance(error, commands.CommandNotFound):
-        await ctx.send(f"Command not found. Error: {error}")
-    else:
-        await ctx.send(f"Command not found. Error: {error}")
-        raise error
 
 closed_tickets = {
     'RESOLVED': 0,
@@ -49,26 +25,82 @@ closed_tickets = {
     'WAITING': 0,
     'HOLD': 0,
     'CLOSED': 0,
-    'KNOWN':0,
+    'KNOWN': 0,
 }
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 
 @bot.event
 async def on_ready():
+    await bot.wait_until_ready()
     print(f'{bot.user.name} has connected to Discord!')
 
-async def send_webhook(old_status, new_status, thread, executor, author, original_message):
+async def store_in_supabase(old_status, new_status, thread, executor, author, original_message):
     payload = {
         'old_status': old_status,
         'new_status': new_status,
         'thread_jump_url': thread.jump_url,
-        'executor_name': str(executor),
-        'author_name': str(author),
+        'support_rep': int(executor),
+        'author_id': int(author),
         'original_message': original_message
     }
 
-    async with aiohttp.ClientSession() as session:
-        async with session.post(WEBHOOK_URL, json=payload) as response:
-            return response.status
+    # Insert the data into the Supabase "tickets" table
+    response = supabase.table("tickets").insert(payload).execute()
+
+    # Check if the insert was successful
+    if response.get("status_code") == 201:
+        return 200
+    else:
+        return response.get("status_code")
+
+async def store_prompt(prompt, images, nsfw_triggered):
+    data = {
+        'prompt': prompt,
+        'images': images,
+        'nsfw_triggered': nsfw_triggered
+    }
+    
+    loop = asyncio.get_event_loop()
+    response = await loop.run_in_executor(None, supabase.table("nsfw_tracking").insert(data).execute)
+    return response
+
+
+
+
+
+@bot.event
+async def on_thread_create(thread):
+    if thread.parent_id == 1053787533139521637:
+        if not thread.name.startswith('[NEW]'):
+            new_name = f'[NEW] {thread.name}'
+            await thread.edit(name=new_name)
+            print(f"Thread name updated to: {new_name}")
+        # Automatically join the thread
+        await thread.join()
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, MissingRequiredArgument):
+        await ctx.send(f"Missing required argument: {error.param.name}")
+    elif isinstance(error, CommandError):
+        await ctx.send(f"An error occurred while processing the command: {error}")
+    else:
+        # You can either pass the error to the default handler or log it here
+        print(f"Unhandled error: {error}")
+
+@bot.command(name='n')
+async def record(ctx, prompt: str, nsfw_triggered: bool, *image_urls: str):
+    # Insert the record into the Supabase table
+    labeled_images = {str(index + 1): url for index, url in enumerate(image_urls)}
+    
+    response = await store_prompt(prompt, labeled_images, nsfw_triggered)
+
+    if 'error' in response:
+        await ctx.send(f"Error: {response['error']['message']}")
+    else:
+        await ctx.send("Recorded successfully.")
+
 
 @bot.command(name='state')
 async def set_status(ctx, status: str):
@@ -83,12 +115,17 @@ async def set_status(ctx, status: str):
         return
 
     status = status.upper()
-    old_status = ctx.channel.name.split(']')[0][1:]
+
+    if ']' in ctx.channel.name:
+        old_status = ctx.channel.name.split(']')[0][1:]
+        new_name = f'[{status}] {ctx.channel.name.split("]")[1].strip()}'
+    else:
+        old_status = "UNKNOWN"
+        new_name = f'[{status}] {ctx.channel.name}'
 
     if status == 'RESOLVED':
         closed_tickets[status] += 1
 
-    new_name = f'[{status}] {ctx.channel.name.split("]")[1].strip()}'
     await ctx.channel.edit(name=new_name)
 
     # Find the original author and message of the thread
@@ -98,12 +135,14 @@ async def set_status(ctx, status: str):
         original_author = message.author
         original_message = message.content
 
-    response_status = await send_webhook(old_status, status, ctx.channel, ctx.author, original_author, original_message)
+    response_status = await store_in_supabase(old_status, status, ctx.channel, ctx.author.id, original_author.id, original_message)
 
     if response_status == 200:
         await ctx.send(f"Thread name updated to: {new_name}")
     else:
         await ctx.send("An error occurred while updating the thread name. Please try again.")
+
+
 
 
 @bot.command(name='closed-count')
