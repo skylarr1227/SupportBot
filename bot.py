@@ -66,7 +66,31 @@ async def store_prompt(prompt, images, nsfw_triggered):
     return response
 
 
+@bot.event
+async def on_thread_update(before, after):
+    # Replace THREAD_ID with the ID of the thread you want to monitor
+    if after.id == 1053787533139521637:
+        if before.applied_tags != after.applied_tags:
+            last_applied_tag = after.applied_tags[-1] if after.applied_tags else None
+            if last_applied_tag:
+                new_name = f"{last_applied_tag} - {after.name}"
+                if new_name != after.name:
+                    await after.edit(name=new_name)
 
+
+clicked_users = set()
+
+@bot.event
+async def on_button_click(res):
+    if res.component.label == "Send User ID":
+        if res.user.id not in clicked_users:
+            await res.respond(
+                type=InteractionType.ChannelMessageWithSource,
+                content=f"{res.user.name}'s User ID: {res.user.id}"
+            )
+            clicked_users.add(res.user.id)
+        else:
+            return
 
 
 @bot.event
@@ -100,6 +124,17 @@ async def record(ctx, prompt: str, nsfw_triggered: bool, *image_urls: str):
         await ctx.send(f"Error: {response['error']['message']}")
     else:
         await ctx.send("Recorded successfully.")
+
+@bot.command()
+async def send_button(ctx):
+    await ctx.send(
+        "Click this button to have your video set back to the original style.",
+        components=[
+            Button(style=ButtonStyle.green, label="Send User ID")
+        ]
+    )
+
+
 
 
 @bot.command(name='state')
