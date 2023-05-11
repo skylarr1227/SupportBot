@@ -2,14 +2,17 @@
 import discord
 from discord.ext import commands
 from discord.ext.commands import CommandError, MissingRequiredArgument
-from supabase-py import create_client, Client
+from supabase import create_client, Client
 from discord_components import DiscordComponents, Button, ButtonStyle, InteractionType
 import os
 import asyncio
+from dotenv import load_dotenv
 
-TOKEN = ''
-SUPABASE_URL = ""
-SUPABASE_API_KEY = os(environ.get("SUPABASE_API_KEY")
+load_dotenv("support.env")
+
+TOKEN = os(environ.get("DISCORD_TOKEN"))
+SUPABASE_URL = os(environ.get("SUPABASE_URL"))
+SUPABASE_API_KEY = os(environ.get("SUPABASE_API_KEY"))
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -66,52 +69,7 @@ async def store_prompt(prompt, images, nsfw_triggered):
     return response
 
 
-@bot.event
-async def on_thread_update(before, after):
-    # Replace THREAD_ID with the ID of the thread you want to monitor
-    if after.id == 1053787533139521637:
-        if before.applied_tags != after.applied_tags:
-            last_applied_tag = after.applied_tags[-1] if after.applied_tags else None
-            if last_applied_tag:
-                new_name = f"{last_applied_tag} - {after.name}"
-                if new_name != after.name:
-                    await after.edit(name=new_name)
 
-
-clicked_users = set()
-
-@bot.event
-async def on_button_click(res):
-    if res.component.label == "Send User ID":
-        if res.user.id not in clicked_users:
-            await res.respond(
-                type=InteractionType.ChannelMessageWithSource,
-                content=f"{res.user.name}'s User ID: {res.user.id}"
-            )
-            clicked_users.add(res.user.id)
-        else:
-            return
-
-
-@bot.event
-async def on_thread_create(thread):
-    if thread.parent_id == 1053787533139521637:
-        if not thread.name.startswith('[NEW]'):
-            new_name = f'[NEW] {thread.name}'
-            await thread.edit(name=new_name)
-            print(f"Thread name updated to: {new_name}")
-        # Automatically join the thread
-        await thread.join()
-
-@bot.event
-async def on_command_error(ctx, error):
-    if isinstance(error, MissingRequiredArgument):
-        await ctx.send(f"Missing required argument: {error.param.name}")
-    elif isinstance(error, CommandError):
-        await ctx.send(f"An error occurred while processing the command: {error}")
-    else:
-        # You can either pass the error to the default handler or log it here
-        print(f"Unhandled error: {error}")
 
 @bot.command(name='n')
 async def record(ctx, prompt: str, nsfw_triggered: bool, *image_urls: str):
