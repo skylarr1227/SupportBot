@@ -80,7 +80,7 @@ class SupportBot(commands.AutoShardedBot):
         self.logger = logging.Logger("supportbot")
         self.supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
         self.notion_client = NotionClient(token_v2=NOTION_TOKEN)
-        self.collection = self.notion_client.get_collection_view("your-notion-database-url")
+        self.collection = self.notion_client.get_collection_view(NOTION_DATABASE_URL)
         openai.api_key = os.environ.get(OPENAI_KEY)
         self.openai = openai.api_key
 
