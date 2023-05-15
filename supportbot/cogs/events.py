@@ -24,15 +24,32 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_thread_create(self, thread):
-        if thread.parent_id not in CHANNEL_IDS:
-            return
-        
-        if not thread.name.startswith('[NEW]'):
-            new_name = f'[NEW] {thread.name}'
-            await thread.edit(name=new_name)
-        
-        # Automatically join the thread
-        await thread.join()
+        try:
+            if thread.parent_id not in CHANNEL_IDS:
+                return
+            
+            if not thread.name.startswith('[NEW]'):
+                new_name = f'[NEW] {thread.name}'
+                await thread.edit(name=new_name)
+            
+            # Automatically join the thread
+            await thread.join()
+
+            # Fetch the thread's history and get the first message
+            messages = await thread.history(limit=1).flatten()
+            first_message = messages[0] if messages else ""
+
+            # Use the thread topic and first message as the question
+            question = f"{thread.name}\n{first_message.content}"
+            response = self.ask_gpt(question)
+
+            # Save the question and response as a new template in Notion
+            row = self.collection.collection.add_row()
+            row.title = thread.name
+            row.first_message = first_message.content
+            row.template = response
+        except Exception as e:
+            print(f"Error processing thread '{thread.name}': {e}")
 
 async def setup(bot):
     await bot.add_cog(Events(bot))

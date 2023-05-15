@@ -6,12 +6,17 @@ import os
 import asyncio
 from dotenv import load_dotenv
 import logging
+import openai
+from notion.client import NotionClient
 
 load_dotenv()
 
 TOKEN = os.environ.get("TOKEN") # this is the bot token
 SUPABASE_URL = os.environ.get("SUPABASE_URL") # this is the supabase url
 SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY") # this is the supabase api key for the database
+NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
+OPENAI_KEY = os.environ.get("GPT_KEY")
+NOTION_DATABASE_URL = os.environ.get("NOTION_DATABASE_URL")
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -74,7 +79,11 @@ class SupportBot(commands.AutoShardedBot):
         self.token = TOKEN
         self.logger = logging.Logger("supportbot")
         self.supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
-    
+        self.notion_client = NotionClient(token_v2=NOTION_TOKEN)
+        self.collection = self.notion_client.get_collection_view("your-notion-database-url")
+        openai.api_key = os.environ.get(OPENAI_KEY)
+        self.openai = openai.api_key
+
     async def on_ready(self):
         self.logger.info(f'{self.user.name} has connected to Discord!')
     
