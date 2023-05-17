@@ -84,6 +84,16 @@ class SupportBot(commands.AutoShardedBot):
         openai.api_key = os.environ.get(OPENAI_KEY)
         self.openai = openai.api_key
 
+
+    async def ask_gpt(self, question):
+        response = openai.Completion.create(
+            engine="gpt3.5-turbo", 
+            prompt=question, 
+            temperature=0.5,
+            max_tokens=100
+        )
+        return response.choices[0].text.strip()
+
     async def on_ready(self):
         self.logger.info(f'{self.user.name} has connected to Discord!')
     
