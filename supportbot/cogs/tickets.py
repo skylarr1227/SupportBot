@@ -60,6 +60,57 @@ class Tickets(commands.Cog):
             return
         await interaction.channel.edit(locked=False)
         await interaction.response.send_message("Thread unlocked.")
+   
+    @support()
+    @app_commands.command(name='add_notion')
+    @app_commands.checks.has_permissions(manage_messages=True)
+    async def summarize(self, interaction):
+        # Check if it's a thread
+        if interaction.channel.thread is None:
+            await interaction.response.send_message("This command can only be used in a thread.")
+            return
+
+        thread = interaction.channel.thread
+        messages = await thread.history(limit=1).flatten()
+        first_message = messages[0] if messages else ""
+
+        # Create a new page in Notion
+        new_page = await self.bot.notion.pages.create(
+            parent={"database_id": "b48e1f0a4f2e4a758992ba1931a35669"},
+            properties={
+                "Name": {
+                    "title": [
+                        {
+                            "text": {
+                                "content": thread.name,
+                            },
+                        },
+                    ],
+                },
+                "Problem": {
+                    "rich_text": [
+                        {
+                            "text": {
+                                "content": first_message.content,
+                            },
+                        },
+                    ],
+                },
+                "Resolution": {
+                    "rich_text": [
+                        {
+                            "text": {
+                                "content": "",
+                            },
+                        },
+                    ],
+                },
+            },
+        )
+
+        await interaction.response.send_message(f"Done.")
+
+    
 
 
     @app_commands.command(name='combine')

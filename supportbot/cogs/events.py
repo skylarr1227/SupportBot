@@ -36,23 +36,7 @@ class Events(commands.Cog):
             # Automatically join the thread
             await thread.join()
 
-            # Fetch the thread's history and get the first message
-            messages = await thread.history(limit=1).flatten()
-            first_message = messages[0] if messages else ""
-
-            # Use the thread topic and first message as the question
-            question = f"{thread.name}\n{first_message.content}"
-            response = await self.bot.ask_gpt(question)
-
-            # Save the question and response as a new template in Notion
-            page = await self.notion_client.pages.create(
-            parent={"database_id": "b48e1f0a4f2e4a758992ba1931a35669"},
-            properties={
-                "Name": {"title": [{"text": {"content": thread.name}}]},
-                "First Message": {"rich_text": [{"text": {"content": first_message.content}}]},
-                "Template": {"rich_text": [{"text": {"content": response}}]}
-            }
-        )
+            
         except Exception as e:
             print(f"Error processing thread '{thread.name}': {e}")
 
