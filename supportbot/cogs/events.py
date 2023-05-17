@@ -42,7 +42,7 @@ class Events(commands.Cog):
 
             # Use the thread topic and first message as the question
             question = f"{thread.name}\n{first_message.content}"
-            response = self.ask_gpt(question)
+            response = await self.bot.ask_gpt(question)
 
             # Save the question and response as a new template in Notion
             page = await self.notion_client.pages.create(
