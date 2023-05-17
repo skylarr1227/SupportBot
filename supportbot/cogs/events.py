@@ -44,10 +44,14 @@ class Events(commands.Cog):
             response = self.ask_gpt(question)
 
             # Save the question and response as a new template in Notion
-            row = self.collection.collection.add_row()
-            row.title = thread.name
-            row.first_message = first_message.content
-            row.template = response
+            page = await self.notion_client.pages.create(
+            parent={"database_id": "b48e1f0a4f2e4a758992ba1931a35669"},
+            properties={
+                "Name": {"title": [{"text": {"content": thread.name}}]},
+                "First Message": {"rich_text": [{"text": {"content": first_message.content}}]},
+                "Template": {"rich_text": [{"text": {"content": response}}]}
+            }
+        )
         except Exception as e:
             print(f"Error processing thread '{thread.name}': {e}")
 
@@ -57,9 +61,9 @@ class Events(commands.Cog):
     async def on_command_error(self, ctx, error):
         global last_error
         last_error = traceback.format_exception(type(error), error, error.__traceback__)
-
+    
+    @team()
     @commands.command(name='lasterror')
-    @commands.is_owner()
     async def last_error(self, ctx):
         global last_error
         if last_error is None:
