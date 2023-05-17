@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 import traceback
+from supportbot.core.utils import team
 
 CHANNEL_IDS = [1019642044878159965, 1025458916441723021,1026654225045913621]
 
