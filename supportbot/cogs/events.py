@@ -1,8 +1,8 @@
 import discord
 from discord.ext import commands
+import traceback
 
-
-CHANNEL_IDS = [1053048696343896084, 1053787533139521637]
+CHANNEL_IDS = [1019642044878159965, 1025458916441723021,1026654225045913621]
 
 class Events(commands.Cog):
     def __init__(self, bot):
@@ -51,5 +51,23 @@ class Events(commands.Cog):
         except Exception as e:
             print(f"Error processing thread '{thread.name}': {e}")
 
+
+
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx, error):
+        global last_error
+        last_error = traceback.format_exception(type(error), error, error.__traceback__)
+
+    @commands.command(name='lasterror')
+    @commands.is_owner()
+    async def last_error(self, ctx):
+        global last_error
+        if last_error is None:
+            await ctx.send("No errors have occurred yet.")
+        else:
+            # Send the traceback in a code block for formatting
+            await ctx.send(f"```python\n{''.join(last_error)}\n```")
+
+            
 async def setup(bot):
     await bot.add_cog(Events(bot))
