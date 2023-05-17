@@ -7,7 +7,7 @@ import asyncio
 from dotenv import load_dotenv
 import logging
 import openai
-from notion import NotionClient
+from notion.client import Client
 
 load_dotenv()
 
