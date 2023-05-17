@@ -7,7 +7,7 @@ import asyncio
 from dotenv import load_dotenv
 import logging
 import openai
-from notion.client import NotionClient
+from notion import NotionClient
 
 load_dotenv()
 
@@ -79,8 +79,8 @@ class SupportBot(commands.AutoShardedBot):
         self.token = TOKEN
         self.logger = logging.Logger("supportbot")
         self.supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
-        self.notion_client = NotionClient(token_v2=NOTION_TOKEN)
-        self.collection = self.notion_client.get_collection_view(NOTION_DATABASE_URL)
+        self.notion_client = NotionClient(access_token=NOTION_TOKEN)
+        self.collection = self.notion_client.databases.retrieve("b48e1f0a4f2e4a758992ba1931a35669")
         openai.api_key = os.environ.get(OPENAI_KEY)
         self.openai = openai.api_key
 
