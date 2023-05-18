@@ -1,6 +1,11 @@
 import discord
 from discord.ext import commands
 from supportbot.core.utils import team
+import os
+import aiohttp
+
+API_PASS = os.environ.get("API_PASS")
+API_LINK = os.environ.get("API_LINK")
 
 
 class Dev(commands.Cog):
@@ -33,7 +38,19 @@ class Dev(commands.Cog):
         await self.bot.tree.sync()
         await ctx.send("Synced.")
 
-    
+    @team()
+    @commands.command()
+    async def check_user(self, ctx, user_id, after, before):
+        password = API_PASS
+        params = {
+            'user_id': user_id,
+            'after_date': after,
+            'before_date': before,
+            'password': password,
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.get(API_LINK, params=params) as resp:
+                await ctx.send(await resp.text())
 
 async def setup(bot):
     await bot.add_cog(Dev(bot))

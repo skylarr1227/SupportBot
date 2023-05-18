@@ -18,6 +18,8 @@ NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
 OPENAI_KEY = os.environ.get("GPT_KEY")
 NOTION_DATABASE_URL = os.environ.get("NOTION_DATABASE_URL")
 
+
+
 intents = discord.Intents.default()
 intents.messages = True
 intents.reactions = True
