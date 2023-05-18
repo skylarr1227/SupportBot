@@ -19,6 +19,7 @@ class Events(commands.Cog):
         old = set([tag.name for tag in before.applied_tags if isinstance(tag, discord.ForumTag)])
         new = set([tag.name for tag in after.applied_tags if isinstance(tag, discord.ForumTag)])
         added = new - old
+        added = [tag for tag in added if tag.isupper()]  # Only include tags in ALL CAPS
         if not added:
             return
         
