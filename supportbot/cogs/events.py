@@ -23,6 +23,9 @@ class Events(commands.Cog):
             return
         
         new_name = f"{' '.join(added)} - {after.name}"
+        # Ensure the name does not exceed the Discord limit of 100 characters
+        if len(new_name) > 100:
+            new_name = new_name[:100]
         await after.edit(name=new_name)
 
     @commands.Cog.listener()
@@ -30,15 +33,17 @@ class Events(commands.Cog):
         try:
             if thread.parent_id not in CHANNEL_IDS:
                 return
-            
+
             if not thread.name.startswith('[NEW]'):
-                new_name = f'[NEW] {thread.name}'
+                new_name = '[NEW] ' + thread.name
+                # Ensure the name does not exceed the Discord limit of 100 characters
+                if len(new_name) > 100:
+                    new_name = new_name[:100]
                 await thread.edit(name=new_name)
-            
+
             # Automatically join the thread
             await thread.join()
 
-            
         except Exception as e:
             print(f"Error processing thread '{thread.name}': {e}")
 

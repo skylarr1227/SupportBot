@@ -126,15 +126,12 @@ class Tickets(commands.Cog):
     @app_commands.command(name='close')
     @app_commands.default_permissions(manage_messages=True)
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def close(self, interaction, thread: discord.Thread, close_notes: str, status: Literal["resolved", "closed", "known"]):
+    async def close(self, interaction, thread: discord.Thread = None, close_notes: str = "None Given", status: Literal["resolved", "closed", "known"]):
         # Check if it's a thread
+        thread = interaction.channel 
         if not isinstance(thread, discord.Thread):
             await interaction.response.send_message("This command can only be used in a thread.", ephemeral=True)
             return
-
-        # Lock and close (archive) the thread
-        await thread.edit(locked=True, archived=True)
-
         # Update the thread's name to indicate its status
         await thread.edit(name=f"[{status.upper()}] {thread.name}")
         # Store close notes in Supabase
@@ -145,6 +142,9 @@ class Tickets(commands.Cog):
             await interaction.response.send_message(f"Failed to save close notes in Supabase.")
 
         await interaction.response.send_message(f"Thread '{thread.name}' has been locked, closed, and the following close notes have been added: '{close_notes}'. Status set to '{status}'.")
+        # Lock and close (archive) the thread
+        await thread.edit(locked=True, archived=True)
+
 
     @support()
     @app_commands.command(name='combine')
@@ -167,14 +167,16 @@ class Tickets(commands.Cog):
             return
         # Send the combined message to the master thread
         await master_thread.send(combined_message)
-        # Lock and close (archive) the original thread, and update its status
-        await thread.edit(locked=True, archived=True, name=f"[ON-GOING] {thread.name}")
+        
         # Leave a message in the original thread with the link to the master thread
         await thread.send(
             f"Your support request has been combined into a combined known-issue post: {master_thread.jump_url}\n"
             "This support post is now locked and closed. Please follow this new post for future updates/resolution."
         )
         await interaction.response.send_message("The messages have been combined into the 'Known Issue' post, and the original post has been locked and closed.")
+        # Lock and close (archive) the original thread, and update its status
+        await thread.edit(locked=True, archived=True, name=f"[ON-GOING] {thread.name}")
+
 
 async def setup(bot):
     await bot.add_cog(Tickets(bot))
