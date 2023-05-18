@@ -28,7 +28,7 @@ intents.message_content = True
 
 async def get_prefix(bot, message):
     if not message.guild:
-        return "?"
+        return "dev."
     prefixes = ['<@1000125868938633297>']
     if message.author.id == 790722073248661525:
         prefixes.append('.')
