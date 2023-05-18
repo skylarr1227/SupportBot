@@ -15,6 +15,8 @@ class Tickets(commands.Cog):
 
     @support()
     @app_commands.command()
+    @app_commands.default_permissions(manage_messages=True)
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def record(self, interaction, prompt: str, nsfw_triggered: bool, image_urls: str):
         # Insert the record into the Supabase table
         image_urls = image_urls.split(" ")
@@ -24,6 +26,8 @@ class Tickets(commands.Cog):
 
     @support()
     @app_commands.command()
+    @app_commands.default_permissions(manage_messages=True)
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def set_status(self, interaction: discord.Interaction, status: typing.Literal["resolved", "on-going", "waiting", "hold", "closed"]):
         if not isinstance(interaction.channel, discord.Thread):
             await interaction.response.send_message("This command can only be used in a thread.", ephemeral=True)
