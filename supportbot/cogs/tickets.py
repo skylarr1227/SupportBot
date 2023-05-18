@@ -47,6 +47,7 @@ class Tickets(commands.Cog):
 
     @support()
     @app_commands.command()
+    @app_commands.default_permissions(manage_messages=True)
     @app_commands.checks.has_permissions(manage_messages=True)
     async def lock(self, interaction):
         if not isinstance(interaction.channel, discord.Thread):
@@ -57,6 +58,7 @@ class Tickets(commands.Cog):
 
     @support()
     @app_commands.command(name='unlock')
+    @app_commands.default_permissions(manage_messages=True)
     @app_commands.checks.has_permissions(manage_messages=True)
     async def unlock(self, interaction):
         if not isinstance(interaction.channel, discord.Thread):
@@ -67,7 +69,8 @@ class Tickets(commands.Cog):
    
     #@support()
     #@app_commands.command(name='add_notion')
-    #@app_commands.checks.has_permissions(manage_messages=True)
+    #@app_commands.default_permissions(manage_messages=True)
+    @app_commands.checks.has_permissions(manage_messages=True)
     #async def summarize(self, interaction):
     #    # Check if it's a thread
     #    if interaction.channel.thread is None:
@@ -117,6 +120,7 @@ class Tickets(commands.Cog):
 
     @support()  
     @app_commands.command(name='close')
+    @app_commands.default_permissions(manage_messages=True)
     @app_commands.checks.has_permissions(manage_messages=True)
     async def close(self, interaction, thread: discord.Thread, close_notes: str, status: Literal["resolved", "closed", "known"]):
         # Check if it's a thread
@@ -138,8 +142,9 @@ class Tickets(commands.Cog):
 
         await interaction.response.send_message(f"Thread '{thread.name}' has been locked, closed, and the following close notes have been added: '{close_notes}'. Status set to '{status}'.")
 
-
+    @support()
     @app_commands.command(name='combine')
+    @app_commands.default_permissions(manage_messages=True)
     @app_commands.checks.has_permissions(manage_messages=True)
     async def combine(self, interaction, thread: discord.Thread, master_thread: discord.Thread, num_messages: int):
         # Validate the number of messages
