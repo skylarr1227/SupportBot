@@ -126,7 +126,7 @@ class Tickets(commands.Cog):
     @app_commands.command(name='close')
     @app_commands.default_permissions(manage_messages=True)
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def close(self, interaction, close_notes: str = "None Given", status: Literal["resolved", "closed", "known"]):
+    async def close(self, interaction, close_notes: str, status: Literal["resolved", "closed", "known"]):
         # Check if it's a thread
         thread = interaction.channel 
         if not isinstance(thread, discord.Thread):
