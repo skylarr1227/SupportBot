@@ -33,5 +33,19 @@ class Dev(commands.Cog):
         await self.bot.tree.sync()
         await ctx.send("Synced.")
 
+    @team()
+    @commands.command()
+    async def check_user(self, ctx, user_id, after, before):
+    password = 'AbhinavVideoGames'
+    params = {
+        'user_id': user_id,
+        'after_date': after,
+        'before_date': before,
+        'password': password,
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.get('http://3.239.63.66:8000/api/support_user_tasks', params=params) as resp:
+            await ctx.send(await resp.text())
+
 async def setup(bot):
     await bot.add_cog(Dev(bot))

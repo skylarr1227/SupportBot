@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands
 import traceback
 from supportbot.core.utils import team
+from collections import defaultdict
+import re
 
 CHANNEL_IDS = [1019642044878159965, 1025458916441723021,1026654225045913621]
 
@@ -47,6 +49,25 @@ class Events(commands.Cog):
         global last_error
         last_error = traceback.format_exception(type(error), error, error.__traceback__)
     
+    @team()
+    @commands.command(name='scan')
+    async def scan(self, ctx):
+        prefix_counts = defaultdict(int)
+
+        for channel_id in CHANNEL_IDS:
+            channel = self.bot.get_channel(channel_id)
+            for thread in channel.threads:
+                match = re.match(r'\[(.*?)\]', thread.name)  # regex to find a string enclosed in square brackets
+                if match:
+                    prefix = match.group(1)  # get the prefix of the thread name
+                    prefix_counts[prefix] += 1
+
+        # format the counts into a string
+        count_strs = [f'{prefix}: {count}' for prefix, count in prefix_counts.items()]
+        count_report = '\n'.join(count_strs)
+
+        await ctx.send(f'Here are the counts of each prefix:\n{count_report}')
+
     @team()
     @commands.command(name='lasterror')
     async def last_error(self, ctx):

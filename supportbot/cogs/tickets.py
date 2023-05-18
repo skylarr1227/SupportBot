@@ -3,12 +3,16 @@ from discord.ext import commands
 from discord import app_commands
 from supportbot.core.utils import team, support, store_in_supabase, store_prompt
 import typing
+from typing import Optional, Literal
 
+GREEN = "\N{LARGE GREEN CIRCLE}"
+RED = "\N{LARGE RED CIRCLE}"
 
 class Tickets(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
+
     @support()
     @app_commands.command()
     async def record(self, interaction, prompt: str, nsfw_triggered: bool, image_urls: str):
@@ -20,7 +24,7 @@ class Tickets(commands.Cog):
 
     @support()
     @app_commands.command()
-    async def set_status(self, interaction: discord.Interaction, status: typing.Literal["resolved", "on-going", "waiting", "hold"]):
+    async def set_status(self, interaction: discord.Interaction, status: typing.Literal["resolved", "on-going", "waiting", "hold", "closed"]):
         if not isinstance(interaction.channel, discord.Thread):
             await interaction.response.send_message("This command can only be used in a thread.", ephemeral=True)
             return
@@ -61,56 +65,78 @@ class Tickets(commands.Cog):
         await interaction.channel.edit(locked=False)
         await interaction.response.send_message("Thread unlocked.")
    
-    @support()
-    @app_commands.command(name='add_notion')
+    #@support()
+    #@app_commands.command(name='add_notion')
+    #@app_commands.checks.has_permissions(manage_messages=True)
+    #async def summarize(self, interaction):
+    #    # Check if it's a thread
+    #    if interaction.channel.thread is None:
+    #        await interaction.response.send_message("This command can only be used in a thread.")
+    #        return
+#
+#    #    thread = interaction.channel.thread
+#    #    messages = await thread.history(limit=1).flatten()
+    #    first_message = messages[0] if messages else ""
+#
+#    #    # Create a new page in Notion
+#    #    new_page = await self.bot.notion.pages.create(
+    #        parent={"database_id": "b48e1f0a4f2e4a758992ba1931a35669"},
+    #        properties={
+    #            "Name": {
+    #                "title": [
+    #                    {
+    #                        "text": {
+    #                            "content": thread.name,
+    #                        },
+    #                    },
+    #                ],
+    #            },
+    #            "Problem": {
+    #                "rich_text": [
+    #                    {
+    #                        "text": {
+    #                            "content": first_message.content,
+    #                        },
+    #                    },
+    #                ],
+    #            },
+    #            "Resolution": {
+    #                "rich_text": [
+    #                    {
+    #                        "text": {
+    #                            "content": "",
+    #                        },
+    #                    },
+    #                ],
+    #            },
+    #        },
+    #    )
+#
+    #    await interaction.response.send_message(f"Done.")
+
+
+    @support()  
+    @app_commands.command(name='close')
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def summarize(self, interaction):
+    async def close(self, interaction, thread: discord.Thread, close_notes: str, status: Literal["resolved", "closed", "known"]):
         # Check if it's a thread
-        if interaction.channel.thread is None:
-            await interaction.response.send_message("This command can only be used in a thread.")
+        if not isinstance(thread, discord.Thread):
+            await interaction.response.send_message("This command can only be used in a thread.", ephemeral=True)
             return
 
-        thread = interaction.channel.thread
-        messages = await thread.history(limit=1).flatten()
-        first_message = messages[0] if messages else ""
+        # Lock and close (archive) the thread
+        await thread.edit(locked=True, archived=True)
 
-        # Create a new page in Notion
-        new_page = await self.bot.notion.pages.create(
-            parent={"database_id": "b48e1f0a4f2e4a758992ba1931a35669"},
-            properties={
-                "Name": {
-                    "title": [
-                        {
-                            "text": {
-                                "content": thread.name,
-                            },
-                        },
-                    ],
-                },
-                "Problem": {
-                    "rich_text": [
-                        {
-                            "text": {
-                                "content": first_message.content,
-                            },
-                        },
-                    ],
-                },
-                "Resolution": {
-                    "rich_text": [
-                        {
-                            "text": {
-                                "content": "",
-                            },
-                        },
-                    ],
-                },
-            },
-        )
+        # Update the thread's name to indicate its status
+        await thread.edit(name=f"[{status.upper()}] {thread.name}")
+        # Store close notes in Supabase
+        response = await store_in_supabase(self.bot, thread.id, close_notes)
+        if response:  
+            await interaction.response.send_message(f"Close notes saved successfully in Supabase.")
+        else:
+            await interaction.response.send_message(f"Failed to save close notes in Supabase.")
 
-        await interaction.response.send_message(f"Done.")
-
-    
+        await interaction.response.send_message(f"Thread '{thread.name}' has been locked, closed, and the following close notes have been added: '{close_notes}'. Status set to '{status}'.")
 
 
     @app_commands.command(name='combine')
