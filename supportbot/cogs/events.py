@@ -34,17 +34,50 @@ class Events(commands.Cog):
         try:
             if thread.parent_id not in CHANNEL_IDS:
                 return
-
+    
             if not thread.name.startswith('[NEW]'):
                 new_name = '[NEW] ' + thread.name
                 # Ensure the name does not exceed the Discord limit of 100 characters
                 if len(new_name) > 100:
                     new_name = new_name[:100]
                 await thread.edit(name=new_name)
-
+    
             # Automatically join the thread
             await thread.join()
-
+    
+            # Log the thread creation in Supabase
+            original_message = None  # Initialize to None, will be updated later
+            author = None  # Initialize to None, will be updated later
+    
+            # Fetch the first message in the thread to get the original author and message
+            async for message in thread.history(oldest_first=True, limit=1):
+                author = message.author
+                original_message = message.content
+    
+            # Determine the platform based on tags in the original_message
+            platform = 0  # Default platform
+            if "dream" in original_message:
+                platform = 1
+            elif "wombot" in original_message:
+                platform = 2
+    
+            # Prepare the data for insertion
+            payload = {
+                'old_status': 'NEW',  # Since the thread is new, the old_status is 'NEW'
+                'new_status': 'NEW',  # The new_status is also 'NEW' at the time of creation
+                'thread_jump_url': thread.jump_url,
+                'support_rep': None,  # No support representative assigned at the time of creation
+                'author_id': int(author.id) if author else None,
+                'original_message': original_message,
+                # New fields
+                'platform': platform,
+                't_id': int(thread.id),
+                'msg_count': thread.message_count  # Or use 'thread.total_message_sent' depending on your requirement
+            }
+            # Insert the data into the Supabase "tickets" table
+            response = self.bot.supabase.table("tickets").insert(payload).execute()
+            return response
+    
         except Exception as e:
             print(f"Error processing thread '{thread.name}': {e}")
 

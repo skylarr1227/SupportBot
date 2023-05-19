@@ -24,30 +24,6 @@ class Tickets(commands.Cog):
         response = await store_prompt(self.bot, prompt, labeled_images, nsfw_triggered)      
         await interaction.response.send_message("Recorded successfully.")       
 
-    @support()
-    @app_commands.command()
-    @app_commands.default_permissions(manage_messages=True)
-    @app_commands.checks.has_permissions(manage_messages=True)
-    async def set_status(self, interaction: discord.Interaction, status: typing.Literal["resolved", "on-going", "waiting", "hold", "closed"]):
-        if not isinstance(interaction.channel, discord.Thread):
-            await interaction.response.send_message("This command can only be used in a thread.", ephemeral=True)
-            return
-        status = status.upper()
-        if ']' in interaction.channel.name:
-            old_status = interaction.channel.name.split(']')[0][1:]
-            new_name = f'[{status}] {interaction.channel.name.split("]")[1].strip()}'
-        else:
-            old_status = "UNKNOWN"
-            new_name = f'[{status}] {interaction.channel.name}'
-        await interaction.channel.edit(name=new_name)
-        # Find the original author and message of the thread
-        original_author = None
-        original_message = None
-        async for message in interaction.channel.history(oldest_first=True, limit=1):
-            original_author = message.author
-            original_message = message.content
-        response_status = await store_in_supabase(self.bot, old_status, status, interaction.channel, interaction.user.id, original_author.id, original_message)
-        await interaction.response.send_message(f"Thread name updated to: {new_name}")
 
     @support()
     @app_commands.command()
@@ -74,7 +50,7 @@ class Tickets(commands.Cog):
     #@support()
     #@app_commands.command(name='add_notion')
     #@app_commands.default_permissions(manage_messages=True)
-    @app_commands.checks.has_permissions(manage_messages=True)
+    #@app_commands.checks.has_permissions(manage_messages=True)
     #async def summarize(self, interaction):
     #    # Check if it's a thread
     #    if interaction.channel.thread is None:
