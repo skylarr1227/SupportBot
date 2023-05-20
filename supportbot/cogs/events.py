@@ -4,12 +4,15 @@ import traceback
 from supportbot.core.utils import team
 from collections import defaultdict
 import re
+from discord.errors import NotFound
 
 CHANNEL_IDS = [1019642044878159965, 1025458916441723021,1026654225045913621]
+STAFF_CHANNEL_ID = 
 
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
 
     @commands.Cog.listener()
     async def on_thread_update(self, before, after):
@@ -22,12 +25,47 @@ class Events(commands.Cog):
         added = [tag for tag in added if tag.isupper()]  # Only include tags in ALL CAPS
         if not added:
             return
-        
-        new_name = f"{' '.join(added)} - {after.name}"
-        # Ensure the name does not exceed the Discord limit of 100 characters
-        if len(new_name) > 100:
-            new_name = new_name[:100]
-        await after.edit(name=new_name)
+    
+        if "CLOSED" in added or "RESOLVED" in added:
+            await after.lock(reason="Thread resolved or closed.")
+            await after.archive(reason="Thread resolved or closed.")
+            return
+    
+        if 'LOG' in added:
+            # Copy relevant information from the original post/message
+            original_post = None
+            async for message in after.history(oldest_first=True, limit=1):
+                original_post = message
+    
+            if original_post is None:
+                print(f"Could not find the original post in the thread {after.name}.")
+                return
+    
+            # Set thread to locked and closed
+            await after.edit(archived=True, locked=True)
+    
+            # Repost this in a designated staff only forum channel nice and neatly
+            staff_channel = self.bot.get_channel(STAFF_CHANNEL_ID)  # Replace STAFF_CHANNEL_ID with the actual ID
+            if staff_channel is not None:
+                await staff_channel.send(
+                    f"Thread **{after.name}** locked and closed automatically due to LOG tag:\n\n"
+                    f"**Original Post by {original_post.author.name}**: {original_post.content}"
+                )
+            else:
+                print("Could not find the staff channel.")
+    
+            # Delete the original post from 1
+            try:
+                await original_post.delete()
+            except NotFound:
+                print(f"Original post in thread {after.name} was not found or already deleted.")
+        else:
+            new_name = f"{' '.join(added)} - {after.name}"
+            # Ensure the name does not exceed the Discord limit of 100 characters
+            if len(new_name) > 100:
+                new_name = new_name[:100]
+            await after.edit(name=new_name)
+    
 
     @commands.Cog.listener()
     async def on_thread_create(self, thread):
