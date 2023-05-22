@@ -15,17 +15,19 @@ class Events(commands.Cog):
 
 
     @commands.Cog.listener()
-    async def on_raw_message_delete(self, message):
-        if isinstance(message.channel, discord.Thread) and not message.is_system():
+    async def on_raw_message_delete(self, payload):
+        channel = self.bot.get_channel(payload.channel_id)
+        if isinstance(channel, discord.Thread):
             # Get the first message in the thread
-            first_message = None
-            async for m in message.channel.history(oldest_first=True, limit=1):
-                first_message = m
+            first_message_id = None
+            async for m in channel.history(oldest_first=True, limit=1):
+                first_message_id = m.id
                 break
             
             # If the first message is the one that got deleted, archive and lock the thread
-            if first_message is None or first_message.id == message.id:
-                await message.channel.edit(archived=True, locked=True, reason="Original post deleted.")
+            if first_message_id is None or first_message_id == payload.message_id:
+                await channel.edit(archived=True, locked=True, reason="Original post deleted.")
+
 
 
     @commands.Cog.listener()
