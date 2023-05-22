@@ -15,7 +15,7 @@ class Events(commands.Cog):
 
 
     @commands.Cog.listener()
-    async def on_message_delete(self, message):
+    async def on_raw_message_delete(self, message):
         if isinstance(message.channel, discord.Thread) and not message.is_system():
             # Get the first message in the thread
             first_message = None
