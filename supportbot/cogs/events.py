@@ -15,6 +15,20 @@ class Events(commands.Cog):
 
 
     @commands.Cog.listener()
+    async def on_message_delete(self, message):
+        if isinstance(message.channel, discord.Thread) and not message.is_system():
+            # Get the first message in the thread
+            first_message = None
+            async for m in message.channel.history(oldest_first=True, limit=1):
+                first_message = m
+                break
+            
+            # If the first message is the one that got deleted, archive and lock the thread
+            if first_message is None or first_message.id == message.id:
+                await message.channel.edit(archived=True, locked=True, reason="Original post deleted.")
+
+
+    @commands.Cog.listener()
     async def on_thread_update(self, before, after):
         if after.parent_id not in CHANNEL_IDS:
             return
