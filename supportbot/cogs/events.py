@@ -27,8 +27,7 @@ class Events(commands.Cog):
             return
     
         if "CLOSED" in added or "RESOLVED" in added:
-            await after.lock(reason="Thread resolved or closed.")
-            await after.archive(reason="Thread resolved or closed.")
+            await after.edit(archived=True, reason="Thread resolved or closed.")
             return
     
         if 'LOG' in added:
