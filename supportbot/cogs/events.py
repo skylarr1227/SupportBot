@@ -25,9 +25,11 @@ class Events(commands.Cog):
         added = [tag for tag in added if tag.isupper()]  # Only include tags in ALL CAPS
         if not added:
             return
-    
-        if "CLOSED" in added or "RESOLVED" in added:
-            await after.edit(archived=True, reason="Thread resolved or closed.")
+        if "RESOLVED" in added:
+            await after.edit(archived=True, locked=True, reason="Thread resolved or closed.")
+            return
+        if "CLOSED" in added:
+            await after.edit(archived=True, locked=True, reason="Thread resolved or closed.")
             return
     
         if 'LOG' in added:
