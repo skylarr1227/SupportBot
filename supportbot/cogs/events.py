@@ -42,10 +42,18 @@ class Events(commands.Cog):
         if not added:
             return
         if "RESOLVED" in added:
-            await after.edit(archived=True, locked=True, reason="Thread resolved or closed.")
+            new_name = '[RESOLVED] ' + after.name
+                # Ensure the name does not exceed the Discord limit of 100 characters
+            if len(new_name) > 100:
+                new_name = new_name[:100]
+            await after.edit(name=new_name, archived=True, locked=True, reason="Thread resolved or closed.")
             return
         if "CLOSED" in added:
-            await after.edit(archived=True, locked=True, reason="Thread resolved or closed.")
+            new_name = '[CLOSED] ' + after.name
+                # Ensure the name does not exceed the Discord limit of 100 characters
+            if len(new_name) > 100:
+                new_name = new_name[:100]
+            await after.edit(name=new_name, archived=True, locked=True, reason="Thread resolved or closed.")
             return
     
         if 'LOG' in added:
