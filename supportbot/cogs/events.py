@@ -7,7 +7,7 @@ import re
 from discord.errors import NotFound
 
 CHANNEL_IDS = [1109324122833567744, 1109323625439445012,1026654225045913621]
-STAFF_CHANNEL_ID = 33
+STAFF_CHANNEL_ID = 1111054788487032863
 
 class Events(commands.Cog):
     def __init__(self, bot):
