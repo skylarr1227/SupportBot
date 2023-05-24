@@ -6,7 +6,7 @@ import aiohttp
 
 API_PASS = os.environ.get("API_PASS")
 API_LINK = os.environ.get("API_LINK")
-
+OS = discord.Object(id=774124295026376755)
 
 class Dev(commands.Cog):
     def __init__(self, bot):
@@ -51,6 +51,42 @@ class Dev(commands.Cog):
         async with aiohttp.ClientSession() as session:
             async with session.get(API_LINK, params=params) as resp:
                 await ctx.send(await resp.text())
+
+    @team()
+    @discord.app_commands.guilds(OS)
+    @discord.app_commands.default_permissions(administrator=True)
+    @discord.app_commands.command(name="db")
+    async def unsafeedb(self, ctx, *, query: str):
+        """DEV: No timeout EDB"""
+        # Sanity checks
+        low_exe = query.lower()
+        if low_exe != self.safe_edb:
+            self.safe_edb = low_exe
+            if "update" in low_exe and "where" not in low_exe:
+                await ctx.send(
+                    "**WARNING**: You attempted to run an `UPDATE` without a `WHERE` clause. If you are **absolutely sure** this action is safe, run this command again."
+                )
+                return
+            if "drop" in low_exe:
+                await ctx.send(
+                    "**WARNING**: You attempted to run a `DROP`. If you are **absolutely sure** this action is safe, run this command again."
+                )
+                return
+            if "delete from" in low_exe:
+                await ctx.send(
+                    "**WARNING**: You attempted to run a `DELETE FROM`. If you are **absolutely sure** this action is safe, run this command again."
+                )
+                return
+        try:
+            result = self.supabase.raw(query)
+        except Exception as e:
+            await ctx.send(f"```py\n{e}```")
+            raise
+        result = str(result)
+        if len(result) > 1950:
+            result = result[:1950] + "\n\n..."
+        await ctx.send(f"```py\n{result}```")
+
 
 async def setup(bot):
     await bot.add_cog(Dev(bot))
