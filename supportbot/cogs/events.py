@@ -42,14 +42,21 @@ class Events(commands.Cog):
         if not added:
             return
         if "RESOLVED" in added:
-            new_name = '[RESOLVED] ' + after.name
+            new_name = re.sub(r'^\[[^\]]*\]', '[RESOLVED]', after.name)
                 # Ensure the name does not exceed the Discord limit of 100 characters
             if len(new_name) > 100:
                 new_name = new_name[:100]
             await after.edit(name=new_name, archived=True, locked=True, reason="Thread resolved or closed.")
             return
+        if "KNOWN" in added:
+            new_name = re.sub(r'^\[[^\]]*\]', '[KNOWN]', after.name)
+                # Ensure the name does not exceed the Discord limit of 100 characters
+            if len(new_name) > 100:
+                new_name = new_name[:100]
+            await after.edit(name=new_name, reason="Thread marked as a known issue")
+            return
         if "CLOSED" in added:
-            new_name = '[CLOSED] ' + after.name
+            new_name = re.sub(r'^\[[^\]]*\]', '[CLOSED]', after.name)
                 # Ensure the name does not exceed the Discord limit of 100 characters
             if len(new_name) > 100:
                 new_name = new_name[:100]
