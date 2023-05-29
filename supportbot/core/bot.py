@@ -15,7 +15,7 @@ TOKEN = os.environ.get("TOKEN") # this is the bot token
 SUPABASE_URL = os.environ.get("SUPABASE_URL") # this is the supabase url
 SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY") # this is the supabase api key for the database
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
-OPENAI_KEY = os.environ.get("GPT_KEY")
+OPENAI_KEY = os.environ.get("OPENAI_API_KEY")
 NOTION_DATABASE_URL = os.environ.get("NOTION_DATABASE_URL")
 
 
