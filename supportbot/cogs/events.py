@@ -170,7 +170,7 @@ class Events(commands.Cog):
                 if match:
                     prefix = match.group(1)  # get the prefix of the thread name
                     prefix_counts[prefix] += 1
-            archived_threads = await channel.archived_threads()
+            archived_threads = channel.archived_threads()
             for thread in archived_threads:
                 match = re.match(r'\[(.*?)\]', thread.name)
                 if match:
