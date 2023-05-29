@@ -53,9 +53,7 @@ class Dev(commands.Cog):
                 await ctx.send(await resp.text())
 
     @team()
-    @discord.app_commands.guilds(OS)
-    @discord.app_commands.default_permissions(manage_messages=True)
-    @discord.app_commands.command(name="db")
+    @commands.command(name="db")
     async def unsafeedb(self, ctx, *, query: str):
         """DEV: No timeout EDB"""
         # Sanity checks
