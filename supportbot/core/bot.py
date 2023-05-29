@@ -98,7 +98,7 @@ class SupportBot(commands.AutoShardedBot):
             {"role": "user", "content": question}
         ]
     )
-    return response['choices'][0]['message']['content'].strip()
+        return response['choices'][0]['message']['content'].strip()
 
 
     async def on_ready(self):
