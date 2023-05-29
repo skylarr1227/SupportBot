@@ -91,13 +91,14 @@ class SupportBot(commands.AutoShardedBot):
 
     async def ask_gpt(self, question):
         openai.api_key = self.openai
-        response = openai.Completion.create(
-            engine="gpt-3.5-turbo", 
-            prompt=question, 
-            temperature=0.5,
-            max_tokens=100
-        )
-        return response.choices[0].text.strip()
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo", 
+            messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": question}
+        ]
+    )
+    return response['choices'][0]['message']['content'].strip()
 
 
     async def on_ready(self):
