@@ -93,12 +93,11 @@ class SupportBot(commands.AutoShardedBot):
         openai.api_key = self.openai
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo", 
-            messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": question}
-        ]
-    )
-        return response['choices'][0]['message']['content'].strip()
+            messages=[{"role": "user", "content": question}],
+            temperature=0.5,
+            max_tokens=100
+        )
+        return response.choices[0].message['content'].strip()
 
 
     async def on_ready(self):
