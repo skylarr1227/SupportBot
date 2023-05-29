@@ -8,7 +8,7 @@ from discord.errors import NotFound
 
 CHANNEL_IDS = [1109324122833567744, 1109323625439445012]
 STAFF_CHANNEL_ID = 1111054788487032863
-
+CHANNEL_IDS2 = [1102722546232729620]
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -186,7 +186,7 @@ class Events(commands.Cog):
     @commands.command(name='summarize')
     async def summarize(self, ctx):
         summaries = []
-        for channel_id in CHANNEL_IDS:
+        for channel_id in CHANNEL_IDS2:
             channel = self.bot.get_channel(channel_id)
             for thread in channel.threads:
                 first_message = None
