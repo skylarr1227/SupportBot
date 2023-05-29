@@ -187,7 +187,7 @@ class Events(commands.Cog):
     async def summarize(self, ctx):
         try:
             summaries = []
-            for channel_id in CHANNEL_IDS:
+            for channel_id in CHANNEL_IDS2:
                 channel = self.bot.get_channel(channel_id)
                 for thread in channel.threads:
                     first_message = None
