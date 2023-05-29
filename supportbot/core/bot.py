@@ -92,7 +92,7 @@ class SupportBot(commands.AutoShardedBot):
     async def ask_gpt(self, question):
         openai.api_key = self.openai
         response = openai.Completion.create(
-            engine="gpt3.5-turbo", 
+            engine="gpt3.0-turbo", 
             prompt=question, 
             temperature=0.5,
             max_tokens=100
