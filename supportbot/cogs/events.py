@@ -201,7 +201,7 @@ class Events(commands.Cog):
 
     @team()
     @commands.command(name='summarize2')
-    async def summarize(self, ctx):
+    async def summarize2(self, ctx):
         summaries = []
         for channel_id in CHANNEL_IDS:
             channel = self.bot.get_channel(channel_id)
