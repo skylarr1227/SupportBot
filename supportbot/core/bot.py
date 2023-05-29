@@ -84,11 +84,13 @@ class SupportBot(commands.AutoShardedBot):
         self.supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
         self.notion_client = AsyncClient(auth=NOTION_TOKEN)
         self.collection = self.notion_client.databases.retrieve("b48e1f0a4f2e4a758992ba1931a35669")
-        openai.api_key = os.environ.get(OPENAI_KEY)
+        self.openai = os.environ.get(OPENAI_KEY)
+
         self.openai = openai.api_key
 
 
     async def ask_gpt(self, question):
+        openai.api_key = self.openai
         response = openai.Completion.create(
             engine="gpt3.5-turbo", 
             prompt=question, 
@@ -96,6 +98,7 @@ class SupportBot(commands.AutoShardedBot):
             max_tokens=100
         )
         return response.choices[0].text.strip()
+
 
     async def on_ready(self):
         self.logger.info(f'{self.user.name} has connected to Discord!')
