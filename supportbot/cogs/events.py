@@ -185,25 +185,28 @@ class Events(commands.Cog):
     @team()
     @commands.command(name='summarize')
     async def summarize(self, ctx):
-        summaries = []
-        for channel_id in CHANNEL_IDS2:
-            channel = self.bot.get_channel(channel_id)
-            for thread in channel.threads:
-                first_message = None
-                async for message in thread.history(oldest_first=True, limit=1):
-                    first_message = message.content
-                    break
-                if first_message:
-                    summary = await self.bot.ask_gpt(f"Summarize: {thread.name} - {first_message}")
-                    summaries.append(f"## {thread.name}\n- {summary}")
-        summary_report = '\n'.join(summaries)
-        await ctx.send(f'Here are the summaries of each thread:\n{summary_report}')
+        try:
+            summaries = []
+            for channel_id in CHANNEL_IDS:
+                channel = self.bot.get_channel(channel_id)
+                for thread in channel.threads:
+                    first_message = None
+                    async for message in thread.history(oldest_first=True, limit=1):
+                        first_message = message.content
+                        break
+                    if first_message:
+                        summary = await self.bot.ask_gpt(f"Summarize: {thread.name} - {first_message}")
+                        summaries.append(f"## {thread.name}\n- {summary}")
+            summary_report = '\n'.join(summaries)
+            await ctx.send(f'Here are the summaries of each thread:\n{summary_report}')
+        except Exception as e:
+            self.bot.logger.error(f"Error in summarize command: {e}")
 
     @team()
     @commands.command(name='summarize2')
     async def summarize2(self, ctx):
         summaries = []
-        for channel_id in CHANNEL_IDS:
+        for channel_id in CHANNEL_IDS2:
             channel = self.bot.get_channel(channel_id)
             for thread in channel.threads:
                 first_message = None
