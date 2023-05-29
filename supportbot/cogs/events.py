@@ -198,7 +198,10 @@ class Events(commands.Cog):
                         summary = await self.bot.ask_gpt(f"Summarize: {thread.name} - {first_message}")
                         summaries.append(f"## {thread.name}\n- {summary}")
             summary_report = '\n'.join(summaries)
-            await ctx.send(f'Here are the summaries of each thread:\n{summary_report}')
+
+            # Split summary report into chunks of 2000 characters or less
+            for i in range(0, len(summary_report), 2000):
+                await ctx.send(summary_report[i:i+2000])
         except Exception as e:
             self.bot.logger.error(f"Error in summarize command: {e}")
 
