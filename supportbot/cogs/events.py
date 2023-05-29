@@ -183,6 +183,40 @@ class Events(commands.Cog):
         await ctx.send(f'Here are the counts of each prefix:\n{count_report}')
 
     @team()
+    @commands.command(name='summarize')
+    async def summarize(self, ctx):
+        summaries = []
+        for channel_id in CHANNEL_IDS:
+            channel = self.bot.get_channel(channel_id)
+            for thread in channel.threads:
+                first_message = None
+                async for message in thread.history(oldest_first=True, limit=1):
+                    first_message = message.content
+                    break
+                if first_message:
+                    summary = await self.bot.ask_gpt(f"Summarize: {thread.name} - {first_message}")
+                    summaries.append(f"## {thread.name}\n- {summary}")
+        summary_report = '\n'.join(summaries)
+        await ctx.send(f'Here are the summaries of each thread:\n{summary_report}')
+
+    @team()
+    @commands.command(name='summarize2')
+    async def summarize(self, ctx):
+        summaries = []
+        for channel_id in CHANNEL_IDS:
+            channel = self.bot.get_channel(channel_id)
+            for thread in channel.threads:
+                first_message = None
+                async for message in thread.history(oldest_first=True, limit=1):
+                    first_message = message.content
+                    break
+                if first_message:
+                    summaries.append(f"## {thread.name}\n- {first_message}")
+        summary_report = '\n'.join(summaries)
+        await ctx.send(f'Here are the summaries of each thread:\n{summary_report}')
+
+
+    @team()
     @commands.command(name='lasterror')
     async def last_error(self, ctx):
         global last_error
