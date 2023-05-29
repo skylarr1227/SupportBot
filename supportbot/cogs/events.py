@@ -170,13 +170,12 @@ class Events(commands.Cog):
                 if match:
                     prefix = match.group(1)  # get the prefix of the thread name
                     prefix_counts[prefix] += 1
-            archived_threads = channel.archived_threads()
-            for thread in archived_threads:
+            async for thread in channel.fetch_archived_threads(limit=100):  # specify your limit here
                 match = re.match(r'\[(.*?)\]', thread.name)
                 if match:
                     prefix = match.group(1)
                     prefix_counts[prefix] += 1
-                
+                    
         # format the counts into a string
         count_strs = [f'{prefix}: {count}' for prefix, count in prefix_counts.items()]
         count_report = '\n'.join(count_strs)
