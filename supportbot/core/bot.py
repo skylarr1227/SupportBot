@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 import logging
 import openai
 from notion_client import AsyncClient
-
+from supportbot.core.utils import team
 load_dotenv()
 
 TOKEN = os.environ.get("TOKEN") # this is the bot token
@@ -127,6 +127,57 @@ class SupportBot(commands.AutoShardedBot):
         )
         return response['choices'][0]['message']['content']
     
+
+    async def analyze_sentiment(self, user_messages):
+        openai.api_key = self.openai
+        messages = [{"role": "system", "content": "You are a helpful assistant."}]
+        for message in user_messages:
+            messages.append({"role": "user", "content": f"What is the sentiment of this message: '{message}'?"})
+        
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo", 
+            messages=messages
+        )
+        return response['choices'][0]['message']['content'], response['usage']['total_tokens']
+
+    @team()
+    @commands.command(name='analyze_sentiment')
+    async def analyze_sentiment_command(self, ctx, thread_id: int):
+        try:
+            thread = self.get_channel(thread_id)
+            if thread is None:
+                await ctx.send(f"No thread found with ID {thread_id}")
+                return
+
+            users = {}
+            async for message in thread.history(oldest_first=True):
+                user_messages = users.get(message.author.id, [])
+                user_messages.append(message.content)
+                users[message.author.id] = user_messages
+
+            if not users:
+                await ctx.send(f"No messages found in the thread {thread_id}")
+                return
+
+            report_parts = []
+            for user_id, messages in users.items():
+                sentiment, tokens_used = await self.analyze_sentiment(messages)
+                total_tokens_used += tokens_used
+                user = await self.fetch_user(user_id)
+                report_parts.append(f"# {user.name}\n## Sentiment: \n- {sentiment}\n### - Number of messages: `{len(messages)}`")
+
+            sentiment_report = '\n'.join(report_parts)
+            sentiment_report += f"\n\n**Total tokens used:** {total_tokens_used}"
+            # Split the report into chunks of <= 2000 characters
+            chunks = [sentiment_report[i:i+2000] for i in range(0, len(sentiment_report), 2000)]
+            for chunk in chunks:
+                await ctx.send(chunk)
+
+        except Exception as e:
+            self.logger.error(f"Error in analyze_sentiment command: {e}")
+            await ctx.send(f"An error occurred while analyzing sentiment: {str(e)}")
+
+
 
     async def on_ready(self):
         self.logger.info(f'{self.user.name} has connected to Discord!')
