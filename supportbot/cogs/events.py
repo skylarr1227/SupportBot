@@ -158,6 +158,18 @@ class Events(commands.Cog):
         global last_error
         last_error = traceback.format_exception(type(error), error, error.__traceback__)
     
+
+    @team()
+    @commands.command(name='analyze')
+    async def sentiment_and_participation(self, ctx, thread_id: int):
+        try:
+            sentiments, participation = await self.bot.analyze_sentiment_and_participation(thread_id)
+            await ctx.send(f'The sentiments of the users are: {sentiments}')
+            await ctx.send(f'The participation counts are: {participation}')
+        except Exception as e:
+            self.bot.logger.error(f"Error in sentiment_and_participation command: {e}")
+
+
     @team()
     @commands.command(name='scan')
     async def scan(self, ctx):

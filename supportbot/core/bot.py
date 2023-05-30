@@ -89,6 +89,38 @@ class SupportBot(commands.AutoShardedBot):
         self.openai = openai.api_key
 
 
+    async def analyze_sentiment_and_participation(self, thread_id: int):
+        # Fetch all messages from the thread
+        thread = self.bot.get_channel(thread_id) # replace with correct function to get thread by ID
+        messages = await thread.history(oldest_first=True, limit=100).flatten()
+        
+        sentiments = {}
+        participation = {}
+
+        for message in messages:
+            # Analyze sentiment
+            sentiment_result = await self.bot.ask_gpt(f"Analyze the sentiment of this text: {message.content}")
+
+            # Increment participation count for this user
+            if message.author.id in participation:
+                participation[message.author.id] += 1
+            else:
+                participation[message.author.id] = 1
+
+            # Store sentiment for this user
+            if message.author.id in sentiments:
+                sentiments[message.author.id].append(sentiment_result)
+            else:
+                sentiments[message.author.id] = [sentiment_result]
+
+        # Average out the sentiments for each user
+        for user_id, sentiment_list in sentiments.items():
+            sentiments[user_id] = sum(sentiment_list) / len(sentiment_list)
+
+        return sentiments, participation
+
+
+
     async def ask_gpt(self, question):
         openai.api_key = self.openai
         response = openai.ChatCompletion.create(
