@@ -188,7 +188,7 @@ class Events(commands.Cog):
                 sentiment, tokens_used = await self.bot.analyze_sentiment(messages)
                 total_tokens_used += tokens_used
                 user = await self.bot.fetch_user(user_id)
-                report_parts.append(f"`{user.name}`\n## Sentiment: \n### - {sentiment}\n- Number of messages: `{len(messages)}`")
+                report_parts.append(f"# {user.name}\n### Sentiment: \n- {sentiment}\n- Number of messages: `{len(messages)}`\n----------------------------")
 
             sentiment_report = '\n'.join(report_parts)
             sentiment_report += f"\n\n**Total tokens used:** `{total_tokens_used}` (`cost: {total_tokens_used * .002}`)"
