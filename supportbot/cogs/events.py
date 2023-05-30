@@ -181,6 +181,7 @@ class Events(commands.Cog):
                 return
 
             report_parts = []
+            total_tokens_used = 0
             for user_id, messages in users.items():
                 sentiment, tokens_used = await self.bot.analyze_sentiment(messages)
                 total_tokens_used += tokens_used
