@@ -161,7 +161,42 @@ class Events(commands.Cog):
 
     
 
+    @team()
+    @commands.command(name='analyze_sentiment')
+    async def analyze_sentiment_command(self, ctx, thread_id: int):
+        try:
+            thread = self.bot.get_channel(thread_id)
+            if thread is None:
+                await ctx.send(f"No thread found with ID {thread_id}")
+                return
 
+            users = {}
+            async for message in thread.history(oldest_first=True):
+                user_messages = users.get(message.author.id, [])
+                user_messages.append(message.content)
+                users[message.author.id] = user_messages
+
+            if not users:
+                await ctx.send(f"No messages found in the thread {thread_id}")
+                return
+
+            report_parts = []
+            for user_id, messages in users.items():
+                sentiment, tokens_used = await self.bot.analyze_sentiment(messages)
+                total_tokens_used += tokens_used
+                user = await self.bot.fetch_user(user_id)
+                report_parts.append(f"# {user.name}\n## Sentiment: \n- {sentiment}\n### - Number of messages: `{len(messages)}`")
+
+            sentiment_report = '\n'.join(report_parts)
+            sentiment_report += f"\n\n**Total tokens used:** {total_tokens_used}"
+            # Split the report into chunks of <= 2000 characters
+            chunks = [sentiment_report[i:i+2000] for i in range(0, len(sentiment_report), 2000)]
+            for chunk in chunks:
+                await ctx.send(chunk)
+
+        except Exception as e:
+            self.bot.logger.error(f"Error in analyze_sentiment command: {e}")
+            await ctx.send(f"An error occurred while analyzing sentiment: {str(e)}")
 
 
     @team()
