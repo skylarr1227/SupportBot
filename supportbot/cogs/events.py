@@ -172,6 +172,8 @@ class Events(commands.Cog):
 
             users = {}
             async for message in thread.history(oldest_first=True):
+                if message.author.bot:
+                    continue
                 user_messages = users.get(message.author.id, [])
                 user_messages.append(message.content)
                 users[message.author.id] = user_messages
@@ -186,10 +188,10 @@ class Events(commands.Cog):
                 sentiment, tokens_used = await self.bot.analyze_sentiment(messages)
                 total_tokens_used += tokens_used
                 user = await self.bot.fetch_user(user_id)
-                report_parts.append(f"# {user.name}\n## Sentiment: \n- {sentiment}\n### - Number of messages: `{len(messages)}`")
+                report_parts.append(f"`{user.name}`\n## Sentiment: \n### - {sentiment}\n- Number of messages: `{len(messages)}`")
 
             sentiment_report = '\n'.join(report_parts)
-            sentiment_report += f"\n\n**Total tokens used:** {total_tokens_used}"
+            sentiment_report += f"\n\n**Total tokens used:** `{total_tokens_used}` (`cost: {total_tokens_used * .002}`)"
             # Split the report into chunks of <= 2000 characters
             chunks = [sentiment_report[i:i+2000] for i in range(0, len(sentiment_report), 2000)]
             for chunk in chunks:
