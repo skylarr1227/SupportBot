@@ -169,7 +169,7 @@ class Events(commands.Cog):
         except Exception as e:
             self.bot.logger.error(f"Error in sentiment_and_participation command: {e}")
 
-
+    @team()
     @commands.command(name='analyze_sentiment')
     async def analyze_sentiment_command(self, ctx, thread_id: int):
         try:
