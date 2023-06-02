@@ -35,7 +35,7 @@ class Events(commands.Cog):
         if after.parent_id not in CHANNEL_IDS:
             if after.parent_id in KNOWN_ISSUES:
                 # Edit the specific post
-                specific_post_channel = self.bot.get_channel(1102722546232729620)  
+                specific_post_channel = self.bot.get_channel(1114313493450072084)  
                 self.specific_post = specific_post_channel.fetch_message(1114313493450072084)
                 new_content = self.specific_post.content + f'\n {after.name}'
                 await self.specific_post.edit(content=new_content)
