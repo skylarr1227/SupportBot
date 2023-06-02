@@ -153,10 +153,10 @@ class Events(commands.Cog):
 
 
 
-    @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
-        global last_error
-        last_error = traceback.format_exception(type(error), error, error.__traceback__)
+    #@commands.Cog.listener()
+    #async def on_command_error(self, ctx, error):
+    #    global last_error
+    #    last_error = traceback.format_exception(type(error), error, error.__traceback__)
     
 
     @commands.Cog.listener()
@@ -200,7 +200,7 @@ class Events(commands.Cog):
                 )
             )
         ctx.bot.logger.exception(type(error).__name__, exc_info=error)
-        await ctx.bot.misc.log_error(ctx, error)
+        
 
     @team()
     @commands.command(name='analyze_sentiment')

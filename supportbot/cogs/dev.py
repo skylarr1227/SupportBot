@@ -3,7 +3,7 @@ from discord.ext import commands
 from supportbot.core.utils import team
 import os
 import aiohttp
-import datetime
+from datetime import datetime
 
 API_PASS = os.environ.get("API_PASS")
 API_LINK = os.environ.get("API_LINK")
