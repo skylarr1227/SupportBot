@@ -4,6 +4,7 @@ from discord import app_commands
 from supportbot.core.utils import team, support, store_in_supabase, store_prompt
 import typing
 from typing import Optional, Literal
+KNOWN_ISSUES = [1102722546232729620]
 
 GREEN = "\N{LARGE GREEN CIRCLE}"
 RED = "\N{LARGE RED CIRCLE}"
@@ -97,6 +98,37 @@ class Tickets(commands.Cog):
 #
     #    await interaction.response.send_message(f"Done.")
 
+    @support()  
+    @app_commands.command(name='close')
+    @app_commands.default_permissions(manage_messages=True)
+    @app_commands.checks.has_permissions(manage_messages=True)
+    async def update_known_issues(self, interaction):
+        # Get the channel and message
+        specific_post_channel = self.bot.get_channel(1114313493450072084)
+        specific_post = await specific_post_channel.fetch_message(1114313493450072084)
+
+        # Initialize a list to store the new content
+        new_content = []
+
+        # Iterate over each known issues channel
+        for channel_id in KNOWN_ISSUES:
+            # Get the channel
+            channel = self.bot.get_channel(channel_id)
+
+            # If it's a forum channel, fetch the threads
+            if isinstance(channel, discord.ForumChannel):
+                threads = await channel.fetch_threads()
+
+                # Iterate over each thread
+                for thread in threads.active:
+                    # If the thread is open, append its name and link to the new content
+                    if not thread.archived:
+                        new_content.append(f"### {thread.name}\n- <#{thread.id}>")
+
+        # Join the new content with line breaks and edit the specific post
+        new_content = "\n".join(new_content)
+        await specific_post.edit(content=new_content)
+        await interaction.response.send_message("Done.")
 
     @support()  
     @app_commands.command(name='close')

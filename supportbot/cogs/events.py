@@ -33,12 +33,12 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_thread_update(self, before, after):
         if after.parent_id not in CHANNEL_IDS:
-            if after.parent_id in KNOWN_ISSUES:
-                # Edit the specific post
-                specific_post_channel = self.bot.get_channel(1114313493450072084)  
-                self.specific_post = await specific_post_channel.fetch_message(1114313493450072084)
-                new_content = self.specific_post.content + f'\n {after.name}'
-                await self.specific_post.edit(content=new_content)
+            #if after.parent_id in KNOWN_ISSUES:
+            #    # Edit the specific post
+            #    specific_post_channel = self.bot.get_channel(1114313493450072084)  
+            #    self.specific_post = await specific_post_channel.fetch_message(1114313493450072084)
+            #    new_content = self.specific_post.content + f'\n {after.name}'
+            #    await self.specific_post.edit(content=new_content)
             return
         
         old = set([tag.name for tag in before.applied_tags if isinstance(tag, discord.ForumTag)])
@@ -109,21 +109,21 @@ class Events(commands.Cog):
     async def on_thread_create(self, thread):
         try:
             if thread.parent_id not in CHANNEL_IDS:
-                if thread.parent_id in KNOWN_ISSUES:
-                    # Get the specific post
-                    specific_post_channel = self.bot.get_channel(1114313493450072084)  
-                    try:
-                        self.specific_post = await specific_post_channel.fetch_message(1114313493450072084)
-                    except discord.NotFound:
-                        print(f"Post with ID {1114313493450072084} not found.")
-                        return
-                    except discord.Forbidden:
-                        print(f"Do not have permission to access post with ID {1114313493450072084}.")
-                        return
-
-                    # Edit the specific post
-                    new_content = self.specific_post.content + f"\n- {thread.name}"
-                    await self.specific_post.edit(content=new_content)
+                #if thread.parent_id in KNOWN_ISSUES:
+                #    # Get the specific post
+                #    specific_post_channel = self.bot.get_channel(1114313493450072084)  
+                #    try:
+                #        self.specific_post = await specific_post_channel.fetch_message(1114313493450072084)
+                #    except discord.NotFound:
+                #        print(f"Post with ID {1114313493450072084} not found.")
+                #        return
+                #    except discord.Forbidden:
+                #        print(f"Do not have permission to access post with ID {1114313493450072084}.")
+                #        return
+#
+                #    # Edit the specific post
+                #    new_content = self.specific_post.content + f"\n- {thread.name}"
+                #    await self.specific_post.edit(content=new_content)
                 return
     
             if not thread.name.startswith('[NEW]'):
