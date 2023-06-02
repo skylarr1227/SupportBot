@@ -99,7 +99,7 @@ class Tickets(commands.Cog):
     #    await interaction.response.send_message(f"Done.")
 
     @support()  
-    @app_commands.command(name='update_known')
+    @app_commands.command(name='show_known_issues')
     @app_commands.default_permissions(manage_messages=True)
     @app_commands.checks.has_permissions(manage_messages=True)
     async def update_known_issues(self, interaction):
@@ -121,14 +121,13 @@ class Tickets(commands.Cog):
 
                 # Iterate over each thread
                 for thread in threads:
-                    # If the thread is open, append its name and link to the new content
+                # If the thread is open and its id is not 1114313493450072084, get its name, link, and first message
                     if not thread.archived and thread.id != 1114313493450072084:
-                        new_content.append(f"- {thread.name}\n   - <#{thread.id}>")
-
-        # Join the new content with line breaks and edit the specific post
+                        first_message = await thread.fetch_message(thread.last_message_id)
+                        first_20_words = " ".join(first_message.content.split()[:20])
+                        new_content.append(f"### {thread.name}\n- {first_20_words}\n- <#{thread.id}>")
         new_content = "\n".join(new_content)
-        await specific_post.edit(content=new_content)
-        await interaction.response.send_message("Done.")
+        await interaction.response.send_message(new_content, ephemeral=True)
 
     @support()  
     @app_commands.command(name='close')
