@@ -145,7 +145,10 @@ class SupportBot(commands.AutoShardedBot):
     async def on_ready(self):
         self.logger.info(f'{self.user.name} has connected to Discord!')
         specific_post_channel = self.get_channel(self.SPECIFIC_POST_CHANNEL_ID)
-        specific_post_channel.create_thread(name="Quick list of Current Known Issues", message="test",)
+        thread = await specific_post_channel.create_thread(
+        name="example",ccccccccccccccccccccccccccccccccccccc
+        type=11
+        )   
         if specific_post_channel is None:
             print(f'Channel with ID {self.SPECIFIC_POST_CHANNEL_ID} not found.')
         return
