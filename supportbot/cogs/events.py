@@ -159,7 +159,48 @@ class Events(commands.Cog):
         last_error = traceback.format_exception(type(error), error, error.__traceback__)
     
 
-    
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx, error):
+        ignored_errors = (
+            commands.errors.CommandNotFound,
+            commands.errors.MissingPermissions,
+            commands.CheckFailure,
+            commands.DisabledCommand,
+            commands.MaxConcurrencyReached,
+        )
+        if isinstance(error, ignored_errors):
+            return
+        if isinstance(error, discord.errors.Forbidden):
+            await ctx.author.send(
+                    f"I do not have Permissions to use in {ctx.channel}")
+            return
+        help_errors = (
+            commands.errors.MissingRequiredArgument,
+            commands.errors.BadArgument,
+        )
+        if isinstance(error, help_errors):
+            command = ctx.command
+            try:
+                await ctx.send(
+                    f"That command doesn't look quite right...\n"
+                    f"Syntax: `{ctx.prefix}{command.qualified_name} {command.signature}`\n\n"
+                )
+            except:
+                pass
+            return
+        if isinstance(error, commands.errors.CommandInvokeError):
+            # This should get the actual error behind the CommandInvokeError
+            error = error.__cause__ or error
+            if "TimeoutError" in str(error) or "Forbidden" in str(error):
+                return
+            ctx.bot.traceback = (
+                f"Exception in command '{ctx.command.qualified_name}'\n"
+                + "".join(
+                    traceback.format_exception(type(error), error, error.__traceback__)
+                )
+            )
+        ctx.bot.logger.exception(type(error).__name__, exc_info=error)
+        await ctx.bot.misc.log_error(ctx, error)
 
     @team()
     @commands.command(name='analyze_sentiment')

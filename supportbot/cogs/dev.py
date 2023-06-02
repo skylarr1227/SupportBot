@@ -3,6 +3,7 @@ from discord.ext import commands
 from supportbot.core.utils import team
 import os
 import aiohttp
+import datetime
 
 API_PASS = os.environ.get("API_PASS")
 API_LINK = os.environ.get("API_LINK")
@@ -41,11 +42,19 @@ class Dev(commands.Cog):
     @team()
     @commands.command()
     async def check_user(self, ctx, user_id, after, before):
+        # Parse the date strings into datetime objects
+        after_date = datetime.strptime(after, '%Y-%m-%d')
+        before_date = datetime.strptime(before, '%Y-%m-%d')
+
+        # Format the datetime objects into ISO 8601 format
+        after_iso = after_date.isoformat() + 'Z'
+        before_iso = before_date.isoformat() + 'Z'
+
         password = API_PASS
         params = {
             'user_id': user_id,
-            'after_date': after,
-            'before_date': before,
+            'after_date': after_iso,
+            'before_date': before_iso,
             'password': password,
         }
         async with aiohttp.ClientSession() as session:
