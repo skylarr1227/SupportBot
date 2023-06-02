@@ -113,11 +113,11 @@ class Tickets(commands.Cog):
         # Iterate over each known issues channel
         for channel_id in KNOWN_ISSUES:
             # Get the channel
-            channel = self.bot.get_channel(channel_id)
+            channel = self.bot.get_channel(1114313493450072084)
 
             # If it's a forum channel, fetch the threads
             if isinstance(channel, discord.ForumChannel):
-                threads = await channel.fetch_threads()
+                threads = channel.threads
 
                 # Iterate over each thread
                 for thread in threads.active:
