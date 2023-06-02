@@ -152,7 +152,7 @@ class SupportBot(commands.AutoShardedBot):
             return
 
         # Create the specific post
-        self.specific_post = await specific_post_channel.send('List of open threads:')
+        #self.specific_post = await specific_post_channel.send('List of open threads:')
 
 
     async def on_error(self, ctx, error):
