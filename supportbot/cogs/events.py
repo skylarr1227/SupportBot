@@ -122,8 +122,8 @@ class Events(commands.Cog):
                         return
 
                     # Edit the specific post
-                    new_content = specific_post.content + f"\n- {thread.name}"
-                    await specific_post.edit(content=new_content)
+                    new_content = self.specific_post.content + f"\n- {thread.name}"
+                    await self.specific_post.edit(content=new_content)
                 return
     
             if not thread.name.startswith('[NEW]'):
