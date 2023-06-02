@@ -99,7 +99,7 @@ class Tickets(commands.Cog):
     #    await interaction.response.send_message(f"Done.")
 
     @support()  
-    @app_commands.command(name='close')
+    @app_commands.command(name='update_known')
     @app_commands.default_permissions(manage_messages=True)
     @app_commands.checks.has_permissions(manage_messages=True)
     async def update_known_issues(self, interaction):
