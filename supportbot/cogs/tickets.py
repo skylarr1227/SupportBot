@@ -120,7 +120,7 @@ class Tickets(commands.Cog):
                 threads = channel.threads
 
                 # Iterate over each thread
-                for thread in threads.active:
+                for thread in threads:
                     # If the thread is open, append its name and link to the new content
                     if not thread.archived:
                         new_content.append(f"### {thread.name}\n- <#{thread.id}>")
