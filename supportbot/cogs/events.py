@@ -36,7 +36,7 @@ class Events(commands.Cog):
             if after.parent_id in KNOWN_ISSUES:
                 # Edit the specific post
                 specific_post_channel = self.bot.get_channel(1102722546232729620)  
-                self.specific_post = specific_post_channel.fetch_message(self.bot.SPECIFIC_POST_CHANNEL_ID)
+                self.specific_post = specific_post_channel.fetch_message(1114313493450072084)
                 new_content = self.specific_post.content + f'\n {after.name}'
                 await self.specific_post.edit(content=new_content)
             return
@@ -113,12 +113,12 @@ class Events(commands.Cog):
                     # Get the specific post
                     specific_post_channel = self.bot.get_channel(1102722546232729620)  
                     try:
-                        self.specific_post = await specific_post_channel.fetch_message(self.bot.SPECIFIC_POST_CHANNEL_ID)
+                        self.specific_post = await specific_post_channel.fetch_message(1114313493450072084)
                     except discord.NotFound:
-                        print(f"Post with ID {self.bot.SPECIFIC_POST_CHANNEL_ID} not found.")
+                        print(f"Post with ID {1114313493450072084} not found.")
                         return
                     except discord.Forbidden:
-                        print(f"Do not have permission to access post with ID {self.bot.SPECIFIC_POST_CHANNEL_ID}.")
+                        print(f"Do not have permission to access post with ID {1114313493450072084}.")
                         return
 
                     # Edit the specific post
