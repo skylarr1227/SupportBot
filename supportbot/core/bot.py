@@ -85,7 +85,7 @@ class SupportBot(commands.AutoShardedBot):
         self.notion_client = AsyncClient(auth=NOTION_TOKEN)
         self.collection = self.notion_client.databases.retrieve("b48e1f0a4f2e4a758992ba1931a35669")
         self.openai = os.environ.get(OPENAI_KEY)
-
+        self.SPECIFIC_POST_CHANNEL_ID = 1102722546232729620
         self.openai = openai.api_key
 
 
@@ -140,13 +140,19 @@ class SupportBot(commands.AutoShardedBot):
         )
         return response['choices'][0]['message']['content'], response['usage']['total_tokens']
 
-    
-
-
+        
 
     async def on_ready(self):
         self.logger.info(f'{self.user.name} has connected to Discord!')
-    
+        specific_post_channel = self.bot.get_channel(self.SPECIFIC_POST_CHANNEL_ID)
+        if specific_post_channel is None:
+            print(f'Channel with ID {self.SPECIFIC_POST_CHANNEL_ID} not found.')
+            return
+
+        # Create the specific post
+        self.specific_post = await specific_post_channel.send('List of open threads:')
+
+
     async def on_error(self, ctx, error):
         if isinstance(error, (commands.NotFound, commands.CheckFailure)):
             return

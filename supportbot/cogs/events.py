@@ -5,7 +5,7 @@ from supportbot.core.utils import team
 from collections import defaultdict
 import re
 from discord.errors import NotFound
-
+KNOWN_ISSUES = [1102722546232729620]
 CHANNEL_IDS = [1109324122833567744, 1109323625439445012]
 STAFF_CHANNEL_ID = 1111054788487032863
 CHANNEL_IDS2 = [1102722546232729620]
@@ -33,6 +33,12 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_thread_update(self, before, after):
         if after.parent_id not in CHANNEL_IDS:
+            if after.parent_id in KNOWN_ISSUES:
+                # Edit the specific post
+                specific_post_channel = self.bot.get_channel(1102722546232729620)  
+                self.specific_post = specific_post_channel.fetch_message(self.bot.SPECIFIC_POST_CHANNEL_ID)
+                new_content = self.specific_post.content + f'\n {after.name}'
+                await self.specific_post.edit(content=new_content)
             return
         
         old = set([tag.name for tag in before.applied_tags if isinstance(tag, discord.ForumTag)])
@@ -103,6 +109,21 @@ class Events(commands.Cog):
     async def on_thread_create(self, thread):
         try:
             if thread.parent_id not in CHANNEL_IDS:
+                if thread.parent_id in KNOWN_ISSUES:
+                    # Get the specific post
+                    specific_post_channel = self.bot.get_channel(1102722546232729620)  
+                    try:
+                        self.specific_post = await specific_post_channel.fetch_message(self.bot.SPECIFIC_POST_CHANNEL_ID)
+                    except discord.NotFound:
+                        print(f"Post with ID {self.bot.SPECIFIC_POST_CHANNEL_ID} not found.")
+                        return
+                    except discord.Forbidden:
+                        print(f"Do not have permission to access post with ID {self.bot.SPECIFIC_POST_CHANNEL_ID}.")
+                        return
+
+                    # Edit the specific post
+                    new_content = specific_post.content + f"\n- {thread.name}"
+                    await specific_post.edit(content=new_content)
                 return
     
             if not thread.name.startswith('[NEW]'):
