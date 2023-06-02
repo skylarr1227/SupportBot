@@ -122,7 +122,7 @@ class Tickets(commands.Cog):
                 # Iterate over each thread
                 for thread in threads:
                     # If the thread is open, append its name and link to the new content
-                    if not thread.archived:
+                    if not thread.archived and thread.id != 1114313493450072084:
                         new_content.append(f"### {thread.name}\n- <#{thread.id}>")
 
         # Join the new content with line breaks and edit the specific post
