@@ -146,7 +146,7 @@ class SupportBot(commands.AutoShardedBot):
         self.logger.info(f'{self.user.name} has connected to Discord!')
         specific_post_channel = self.get_channel(self.SPECIFIC_POST_CHANNEL_ID)
         thread = await specific_post_channel.create_thread(
-        name="example",ccccccccccccccccccccccccccccccccccccc
+        name="example",
         type=11
         )   
         if specific_post_channel is None:
