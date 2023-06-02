@@ -111,7 +111,7 @@ class Events(commands.Cog):
             if thread.parent_id not in CHANNEL_IDS:
                 if thread.parent_id in KNOWN_ISSUES:
                     # Get the specific post
-                    specific_post_channel = self.bot.get_channel(1102722546232729620)  
+                    specific_post_channel = self.bot.get_channel(1114313493450072084)  
                     try:
                         self.specific_post = await specific_post_channel.fetch_message(1114313493450072084)
                     except discord.NotFound:
