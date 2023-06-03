@@ -105,6 +105,7 @@ class Tickets(commands.Cog):
     async def update_known_issues(self, interaction):
         """Show the known issues reported by users and aknowleged by the WOMBO team, in the #known-issues channel with links-only visible to you."""
         thread_groups = defaultdict(list)
+        interaction.response.defer()
         for channel_id in KNOWN_ISSUES:
             channel = self.bot.get_channel(channel_id)
             if isinstance(channel, discord.ForumChannel):
