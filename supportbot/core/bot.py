@@ -79,6 +79,7 @@ class SupportBot(commands.AutoShardedBot):
             'CLOSED': 0,
             'KNOWN': 0,
         }
+        self.remove_command("help")
         self.token = TOKEN
         self.logger = logging.Logger("supportbot")
         self.supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
