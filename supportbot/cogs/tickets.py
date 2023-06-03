@@ -112,9 +112,14 @@ class Tickets(commands.Cog):
                 for thread in threads:
                     if not thread.archived and thread.id != 1114313493450072084:
                         first_message = await thread.fetch_message(thread.last_message_id)
-                        # Remove the leading tag in brackets from the thread name
-                        tag = re.search(r'\[(\w+)\]', thread.name).group(1)
-                        thread_name = re.sub(r'\[\w+\]\s*', '', thread.name)
+                        tag_match = re.search(r'\[(\w+)\]', thread.name)
+                        if tag_match is not None:
+                            tag = tag_match.group(1)
+                            # Remove the leading tag in brackets from the thread name
+                            thread_name = re.sub(r'\[\w+\]\s*', '', thread.name)
+                        else:
+                            tag = "Other"
+                        thread_name = thread.name
                         # Remove the leading word in all caps surrounded by brackets from the message content
                         cleaned_message = re.sub(r'\[\w+\]\s*', '', first_message.content)
                         # Extract the first 20 words from the cleaned content of the message
