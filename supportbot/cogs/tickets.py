@@ -123,8 +123,10 @@ class Tickets(commands.Cog):
                 # If the thread is open and its id is not 1114313493450072084, get its name, link, and first message
                     if not thread.archived and thread.id != 1114313493450072084:
                         first_message = await thread.fetch_message(thread.last_message_id)
-                        first_20_words = " ".join(first_message.content.split()[:20])
-                        embed.add_field(name=thread.name, value=f"{first_20_words}\n[Link to thread](https://discord.com/channels/774124295026376755/{channel_id}/{thread.id})", inline=False)
+                        cleaned_message = re.sub(r'\[\w+\]\s*', '', first_message.content)
+                        first_20_words = " ".join(cleaned_message.split()[:20])
+                        
+                        embed.add_field(name=thread.name, value=f"- {first_20_words}[...continue reading here.](https://discord.com/channels/774124295026376755/{channel_id}/{thread.id})", inline=False)
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @support()  
