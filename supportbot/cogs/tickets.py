@@ -105,7 +105,7 @@ class Tickets(commands.Cog):
         # Get the channel and message
         #specific_post_channel = self.bot.get_channel(1114313493450072084)
         #specific_post = await specific_post_channel.fetch_message(1114313493450072084)
-
+        embed = discord.Embed(title="Current Known Issues", color=discord.Color.blue())
         # Initialize a list to store the new content
         new_content = []
 
@@ -124,9 +124,8 @@ class Tickets(commands.Cog):
                     if not thread.archived and thread.id != 1114313493450072084:
                         first_message = await thread.fetch_message(thread.last_message_id)
                         first_20_words = " ".join(first_message.content.split()[:20])
-                        new_content.append(f"1. {thread.name}\n- {first_20_words}...\n- <#{thread.id}> ")
-        new_content = "\n".join(new_content)
-        await interaction.response.send_message(new_content, ephemeral=True)
+                        embed.add_field(name=thread.name, value=f"{first_20_words}\n[Link to thread](https://discord.com/channels/774124295026376755/{channel_id}/{thread.id})", inline=False)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @support()  
     @app_commands.command(name='close')
