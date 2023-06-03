@@ -4,6 +4,7 @@ from discord import app_commands
 from supportbot.core.utils import team, support, store_in_supabase, store_prompt
 import typing
 import re
+from collections import defaultdict
 from typing import Optional, Literal
 KNOWN_ISSUES = [1102722546232729620]
 
@@ -103,32 +104,34 @@ class Tickets(commands.Cog):
     @help.command(name='known_issues')
     async def update_known_issues(self, interaction):
         """Show the known issues reported by users and aknowleged by the WOMBO team, in the #known-issues channel with links-only visible to you."""
-        # Get the channel and message
-        #specific_post_channel = self.bot.get_channel(1114313493450072084)
-        #specific_post = await specific_post_channel.fetch_message(1114313493450072084)
-        embed = discord.Embed(title="Current Known Issues", color=discord.Color.blue())
-        # Initialize a list to store the new content
-        new_content = []
-
-        # Iterate over each known issues channel
+        thread_groups = defaultdict(list)
         for channel_id in KNOWN_ISSUES:
-            # Get the channel
-            channel = self.bot.get_channel(1102722546232729620)
-
-            # If it's a forum channel, fetch the threads
+            channel = self.bot.get_channel(channel_id)
             if isinstance(channel, discord.ForumChannel):
                 threads = channel.threads
-
-                # Iterate over each thread
                 for thread in threads:
-                # If the thread is open and its id is not 1114313493450072084, get its name, link, and first message
                     if not thread.archived and thread.id != 1114313493450072084:
                         first_message = await thread.fetch_message(thread.last_message_id)
+                        # Remove the leading tag in brackets from the thread name
+                        tag = re.search(r'\[(\w+)\]', thread.name).group(1)
+                        thread_name = re.sub(r'\[\w+\]\s*', '', thread.name)
+                        # Remove the leading word in all caps surrounded by brackets from the message content
                         cleaned_message = re.sub(r'\[\w+\]\s*', '', first_message.content)
+                        # Extract the first 20 words from the cleaned content of the message
                         first_20_words = " ".join(cleaned_message.split()[:20])
-                        
-                        embed.add_field(name=thread.name, value=f"- {first_20_words}[...continue reading here.](https://discord.com/channels/774124295026376755/{channel_id}/{thread.id})", inline=False)
+                        thread_groups[tag].append((thread_name, first_20_words, thread.id))
+        embed = discord.Embed(title="Open Threads", color=discord.Color.blue())
+        # Construct the description of the embed by iterating over each group of threads
+        description = ""
+        for tag, threads in thread_groups.items():
+            description += f"## {tag} Issues\n"
+            for thread_name, first_20_words, thread_id in threads:
+                description += f"**{thread_name}** - {first_20_words}... [continue reading here](https://discord.com/channels/774124295026376755/{channel_id}/{thread_id})\n"
+            description += "\n"
+
+        embed.description = description
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
 
     @support()  
     @app_commands.command(name='close')
