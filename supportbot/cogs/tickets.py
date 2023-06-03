@@ -125,6 +125,7 @@ class Tickets(commands.Cog):
                         cleaned_message = re.sub(r'\[\w+\]\s*', '', first_message.content)
                         # Extract the first 20 words from the cleaned content of the message
                         first_20_words = " ".join(cleaned_message.split()[:20])
+                        first_20_words = re.sub(r'\[\w+\]\s*', '', first_20_words)
                         thread_groups[tag].append((thread_name, first_20_words, thread.id))
         embed = discord.Embed(title="Known Issues by Platform", color=discord.Color.red())
         # Construct the description of the embed by iterating over each group of threads
