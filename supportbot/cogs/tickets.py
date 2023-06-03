@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 from supportbot.core.utils import team, support, store_in_supabase, store_prompt
 import typing
+import re
 from typing import Optional, Literal
 KNOWN_ISSUES = [1102722546232729620]
 
