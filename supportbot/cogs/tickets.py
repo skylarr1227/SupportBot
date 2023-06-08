@@ -4,8 +4,11 @@ from discord import app_commands
 from supportbot.core.utils import team, support, store_in_supabase, store_prompt
 import typing
 import re
+import asyncio
 from collections import defaultdict
 from typing import Optional, Literal
+from cogs.strings import *
+
 KNOWN_ISSUES = [1102722546232729620]
 
 GREEN = "\N{LARGE GREEN CIRCLE}"
@@ -14,6 +17,23 @@ RED = "\N{LARGE RED CIRCLE}"
 class Tickets(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        
+
+    async def get_commit(self, ctx):
+        COMMAND = f"cd /home/ubuntu/s/SupportBot/supportbot && git branch -vv"
+
+        proc = await asyncio.create_subprocess_shell(
+            COMMAND, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+
+        stdout, stderr = await proc.communicate()
+        stdout = stdout.decode().split("\n")
+
+        for branch in stdout:
+            if branch.startswith("*"):
+                return branch
+
+        raise ValueError()
     
 
     @support()
@@ -50,6 +70,72 @@ class Tickets(commands.Cog):
         await interaction.channel.edit(locked=False)
         await interaction.response.send_message("Thread unlocked.")
    
+    @team()
+    @commands.command(name='pull', aliases=['gitpull', 'git_pull', 'git-pull'])
+    async def refresh(self, ctx):
+        COMMAND = "cd /home/ubuntu/s/SupportBot && git pull"
+        addendum = ""
+
+        proc = await asyncio.create_subprocess_shell(
+            COMMAND, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+
+        stdout, stderr = await proc.communicate()
+        stdout = stdout.decode()
+
+        if "no tracking information" in stderr.decode():
+            COMMAND = "cd /home/ubuntu/s/SupportBot && git pull"
+            proc = await asyncio.create_subprocess_shell(
+                COMMAND, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await proc.communicate()
+            stdout = stdout.decode()
+            addendum = "\n\n**Warning: no upstream branch is set.  I automatically pulled from origin/clustered but this may be wrong.  To remove this message and make it dynamic, please run `git branch --set-upstream-to=origin/<branch> <branch>`**"
+
+        embed = discord.Embed(title="Git pull", description="", color=0xFFB6C1)
+
+        if "Fast-forward" not in stdout:
+            if "Already up to date." in stdout:
+                embed.description = "Code is up to date."
+            else:
+                embed.description = "Pull failed: Fast-forward strategy failed.  Look at logs for more details."
+                ctx.bot.logger.warning(stdout)
+            embed.description += addendum
+            await ctx.send(embed=embed)
+            return
+
+        cogs = []
+        main_files = []
+
+        try:
+            current = await self.get_commit(ctx)
+        except ValueError:
+            pass
+        else:
+            embed.description += f"`{current[2:]}`\n"
+
+        cogs = re.findall(r"\ssupportbot\/cogs\/(\w+)", stdout)
+        if len(cogs) > 1:
+            embed.description += f"The following cogs were updated and needs to be reloaded: `{'`, `'.join(cogs)}`.\n"
+        elif len(cogs) == 1:
+            embed.description += f"The following cog was updated and needs to be reloaded: `{cogs[0]}`.\n"
+        else:
+            embed.description += "No cogs were updated.\n"
+
+        main_files = re.findall(r"\ssupportbot\/(?!cogs)(\S*)", stdout)
+        if len(main_files) > 1:
+            embed.description += f"The following non-cog files were updated and require a restart: `{'`, `'.join(main_files)}`."
+        elif main_files:
+            embed.description += f"The following non-cog file was updated and requires a restart: `{main_files[0]}`."
+        else:
+            embed.description += "No non-cog files were updated."
+
+        embed.description += addendum
+
+        await ctx.send(embed=embed)
+
+
+
     #@support()
     #@app_commands.command(name='add_notion')
     #@app_commands.default_permissions(manage_messages=True)
@@ -101,6 +187,21 @@ class Tickets(commands.Cog):
     #    await interaction.response.send_message(f"Done.")
     help = app_commands.Group(name="help", description="Helpful commands, information, and more")
      
+    @help.command(name='link_premium')
+    async def link_premium(self, interaction):
+        """Link your Discord account to your WOMBO Premium account."""
+        embed = discord.Embed(title=linking_title, description="Description", color=discord.Color.blue())
+
+        embed.set_author(name="Author Name", icon_url="https://global-uploads.webflow.com/61d7278cd8cf5c868e8e869d/61d72be485ac65cce2478f9c_wombo-logo-p-500.png")
+        embed.set_thumbnail(url="https://url-to-thumbnail.png")
+        embed.set_image(url="https://url-to-image.png") 
+
+        embed.add_field(name="Field1", value="Value1", inline=False)
+        embed.set_footer(text="Footer Text", icon_url="https://global-uploads.webflow.com/61d7278cd8cf5c868e8e869d/61d72be485ac65cce2478f9c_wombo-logo-p-500.png")
+        await interaction.response.send_message("https://wombo.ai/premium") 
+
+
+
     @help.command(name='known_issues')
     async def update_known_issues(self, interaction):
         """Show the known issues reported by users and aknowleged by the WOMBO team, in the #known-issues channel with links-only visible to you."""

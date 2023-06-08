@@ -17,7 +17,8 @@ SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY") # this is the supabase api
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
 OPENAI_KEY = os.environ.get("OPENAI_API_KEY")
 NOTION_DATABASE_URL = os.environ.get("NOTION_DATABASE_URL")
-
+FRESHDESK_API_KEY = os.environ.get("FRESHDESK_API_KEY")
+FRESHDESK_DOMAIN = os.environ.get("FRESHDESK_DOMAIN")
 
 
 intents = discord.Intents.default()
@@ -88,7 +89,9 @@ class SupportBot(commands.AutoShardedBot):
         self.openai = os.environ.get(OPENAI_KEY)
         self.SPECIFIC_POST_CHANNEL_ID = 1102722546232729620
         self.openai = openai.api_key
-
+        self.api_key = FRESHDESK_API_KEY
+        self.domain = FRESHDESK_DOMAIN
+        self.api_url = f"https://{self.domain}.freshdesk.com/api/v2/"
 
    
     async def analyze_sentiment_and_participation(self, thread_id):

@@ -225,11 +225,12 @@ class Events(commands.Cog):
 
     @team()
     @commands.command(name='analyze_sentiment')
-    async def analyze_sentiment_command(self, ctx, thread_id: int):
+    async def analyze_sentiment_command(self, interaction, thread_id: discord.TextChannel):
+        
         try:
             thread = self.bot.get_channel(thread_id)
             if thread is None:
-                await ctx.send(f"No thread found with ID {thread_id}")
+                await interaction.response.send_message(f"No thread found with ID {thread_id}")
                 return
 
             users = {}
@@ -241,7 +242,7 @@ class Events(commands.Cog):
                 users[message.author.id] = user_messages
 
             if not users:
-                await ctx.send(f"No messages found in the thread {thread_id}")
+                await interaction.response.send_message(f"No messages found in the thread {thread_id}")
                 return
 
             report_parts = []
@@ -257,11 +258,11 @@ class Events(commands.Cog):
             # Split the report into chunks of <= 2000 characters
             chunks = [sentiment_report[i:i+2000] for i in range(0, len(sentiment_report), 2000)]
             for chunk in chunks:
-                await ctx.send(chunk)
+                await interaction.response.send_message(chunk)
 
         except Exception as e:
             self.bot.logger.error(f"Error in analyze_sentiment command: {e}")
-            await ctx.send(f"An error occurred while analyzing sentiment: {str(e)}")
+            await interaction.response.send_message(f"An error occurred while analyzing sentiment: {str(e)}")
 
 
     @team()
