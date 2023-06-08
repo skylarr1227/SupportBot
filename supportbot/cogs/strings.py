@@ -1,9 +1,9 @@
 
 
 linking_title = "Linking Your Dream Account"
-linking_description = f"Click the link <[here](https://discord.com/api/oauth2/authorize?client_id=996534605828083824&redirect_uri=https%3A%2F%2Fdream.ai%2Fwombot%2Flink-account&response_type=code&scope=identify)> to link your Dream mobile app account and sync your premium membership.\n\n" \
+linking_description = f"## Click the link [here](https://discord.com/api/oauth2/authorize?client_id=996534605828083824&redirect_uri=https%3A%2F%2Fdream.ai%2Fwombot%2Flink-account&response_type=code&scope=identify)\n to link your Dream mobile app account and sync your premium membership.\n\n" \
                   "- **As of March 9, 2023, the App and WOMBOT are separate subscriptions.**\n\n" \
-                  "- **Users who purchased Lifetime in the App prior to March 9, or who have maintained an active subscription since then, still have their WOMBOT benefits. If you're missing them, please contact us via the support channels and we'll get that resolved.**"
+                  "```Users who purchased Lifetime in the App prior to March 9, or who have maintained an active subscription since then, still have their WOMBOT benefits. If you're missing them, please contact us via the support channels and we'll get that resolved.```"
 
 img_tips_title = "Best Practices for Generating Images via Text Prompts",
 img_tips = """
