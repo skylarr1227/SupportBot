@@ -7,7 +7,10 @@ import re
 import asyncio
 from collections import defaultdict
 from typing import Optional, Literal
-from cogs.strings import *
+from cogs.strings import linking_title, linking_description
+import datetime
+import requests
+
 
 KNOWN_ISSUES = [1102722546232729620]
 
@@ -190,16 +193,61 @@ class Tickets(commands.Cog):
     @help.command(name='link_premium')
     async def link_premium(self, interaction):
         """Link your Discord account to your WOMBO Premium account."""
-        embed = discord.Embed(title=linking_title, description="Description", color=discord.Color.blue())
-
-        embed.set_author(name="Author Name", icon_url="https://global-uploads.webflow.com/61d7278cd8cf5c868e8e869d/61d72be485ac65cce2478f9c_wombo-logo-p-500.png")
+        embed = discord.Embed(title=linking_title, description=linking_description, color=discord.Color.blue())
         embed.set_thumbnail(url="https://url-to-thumbnail.png")
-        embed.set_image(url="https://url-to-image.png") 
+        embed.set_image(url="https://global-uploads.webflow.com/61d7278cd8cf5c868e8e869d/61d72be485ac65cce2478f9c_wombo-logo-p-500.png") 
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
-        embed.add_field(name="Field1", value="Value1", inline=False)
-        embed.set_footer(text="Footer Text", icon_url="https://global-uploads.webflow.com/61d7278cd8cf5c868e8e869d/61d72be485ac65cce2478f9c_wombo-logo-p-500.png")
-        await interaction.response.send_message("https://wombo.ai/premium") 
+    @support()
+    @app_commands.command(name='report')
+    @app_commands.default_permissions(manage_messages=True)
+    @app_commands.checks.has_permissions(manage_messages=True)
+    async def ticket_report(self, interaction: discord.Interaction):
+        """Send a report of closed tickets in the last 24 hours."""
+        headers = {"Content-Type": "application/json"}
+        yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
+        yesterday_str = yesterday.strftime("%Y-%m-%dT%H:%M:%SZ")
 
+        # Fetch tickets closed in the last 24 hours
+        response = requests.get(
+            self.api_url + f"search/tickets?query='status:5 AND updated_at:>'{yesterday_str}'",
+            auth=(self.api_key, "X"),
+            headers=headers,
+        )
+
+        # Check for a successful response
+        if response.status_code == 200:
+            tickets = response.json()
+            agent_tickets = {}
+
+            # Count tickets closed by each agent
+            for ticket in tickets:
+                agent_id = ticket["responder_id"]
+                if agent_id in agent_tickets:
+                    agent_tickets[agent_id] += 1
+                else:
+                    agent_tickets[agent_id] = 1
+
+            # Fetch agents' names
+            for agent_id in agent_tickets.keys():
+                response = requests.get(
+                    self.api_url + f"agents/{agent_id}",
+                    auth=(self.api_key, "X"),
+                    headers=headers,
+                )
+                if response.status_code == 200:
+                    agent = response.json()
+                    agent_tickets[agent_id] = (agent["contact"]["name"], agent_tickets[agent_id])
+
+            # Send the report
+            report = "\n".join(
+                f"Agent {name} closed {count} tickets in the last 24 hours."
+                for name, count in agent_tickets.values()
+            )
+            await interaction.respponse.send_message(report)
+        else:
+            await interaction.respponse.send_message("Could not fetch tickets.")
 
 
     @help.command(name='known_issues')
