@@ -211,8 +211,8 @@ class Tickets(commands.Cog):
 
         # Fetch tickets closed in the last 24 hours
         response = requests.get(
-            self.api_url + f"search/tickets?query='status:5 AND updated_at:>'{yesterday_str}'",
-            auth=(self.api_key, "X"),
+            self.bot.api_url + f"search/tickets?query='status:5 AND updated_at:>'{yesterday_str}'",
+            auth=(self.bot.api_key, "X"),
             headers=headers,
         )
 
@@ -232,8 +232,8 @@ class Tickets(commands.Cog):
             # Fetch agents' names
             for agent_id in agent_tickets.keys():
                 response = requests.get(
-                    self.api_url + f"agents/{agent_id}",
-                    auth=(self.api_key, "X"),
+                    self.bot.api_url + f"agents/{agent_id}",
+                    auth=(self.bot.api_key, "X"),
                     headers=headers,
                 )
                 if response.status_code == 200:
