@@ -245,9 +245,9 @@ class Tickets(commands.Cog):
                 f"Agent {name} closed {count} tickets in the last 24 hours."
                 for name, count in agent_tickets.values()
             )
-            await interaction.respponse.send_message(report)
+            await interaction.response.send_message(report)
         else:
-            await interaction.respponse.send_message("Could not fetch tickets.")
+            await interaction.response.send_message("Could not fetch tickets.")
 
 
     @help.command(name='known_issues')
