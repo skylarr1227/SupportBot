@@ -7,7 +7,7 @@ import re
 import asyncio
 from collections import defaultdict
 from typing import Optional, Literal
-from strings import linking_title, linking_description
+from supportbot.cogs.strings import linking_title, linking_description
 import datetime
 import requests
 
