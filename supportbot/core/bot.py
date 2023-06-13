@@ -12,13 +12,7 @@ from supportbot.core.utils import team
 load_dotenv()
 
 TOKEN = os.environ.get("TOKEN") # this is the bot token
-SUPABASE_URL = os.environ.get("SUPABASE_URL") # this is the supabase url
-SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY") # this is the supabase api key for the database
-NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
-OPENAI_KEY = os.environ.get("OPENAI_API_KEY")
-NOTION_DATABASE_URL = os.environ.get("NOTION_DATABASE_URL")
-FRESHDESK_API_KEY = os.environ.get("FRESHDESK_API_KEY")
-FRESHDESK_DOMAIN = os.environ.get("FRESHDESK_DOMAIN")
+
 
 
 intents = discord.Intents.default()
@@ -54,6 +48,8 @@ class SupportBot(commands.AutoShardedBot):
             *args,
             **kwargs,
         )
+        SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY")
+        self.SUPABASE_API_KEY = SUPABASE_API_KEY
         self.WOMBO_TEAM = [
             790722073248661525,
             381887137362083841,
@@ -82,6 +78,13 @@ class SupportBot(commands.AutoShardedBot):
         }
         self.remove_command("help")
         self.token = TOKEN
+        SUPABASE_URL = os.environ.get("SUPABASE_URL") # this is the supabase url
+        self.SUPABASE_URL = SUPABASE_URL
+        NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
+        OPENAI_KEY = os.environ.get("OPENAI_API_KEY")
+        NOTION_DATABASE_URL = os.environ.get("NOTION_DATABASE_URL")
+        FRESHDESK_API_KEY = os.environ.get("FRESHDESK_API_KEY")
+        FRESHDESK_DOMAIN = os.environ.get("FRESHDESK_DOMAIN")
         self.logger = logging.Logger("supportbot")
         self.supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
         self.notion_client = AsyncClient(auth=NOTION_TOKEN)
