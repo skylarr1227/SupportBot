@@ -38,12 +38,13 @@ class Tickets(commands.Cog):
 
         raise ValueError()
     
-    def get_data_from_supabase(self, id):
+    async def get_data_from_supabase(self, id):
         # Use your API key here
-        url = f"https://hhadwbdbhftleyxygowv.supabase.co/rest/v1/your-table?select=*&id=eq.{id}"
-        headers = {"apikey": self.bot.SUPABASE_API_KEY}
-        response = requests.get(url, headers=headers)
-        return response.json()[0] 
+        response = await self.bot.supabase.from_("nsfw_tracking").select("*").eq("id", id).execute()
+        if response.data:
+            return response.data[0]
+        else:
+            return None
 
 
     @support()
@@ -51,7 +52,11 @@ class Tickets(commands.Cog):
     @app_commands.default_permissions(manage_messages=True)
     @app_commands.checks.has_permissions(manage_messages=True)
     async def info(self, interaction, id: int):
+        """Information about a failed NSFW prompt/check by id"""
         data = self.get_data_from_supabase(id)
+        if data is None:
+            await interaction.response.send_message("ID not found.")
+            return
         embed = discord.Embed(title=f"Information for ID: {data['id']}", color=0x00ff00)
 
         # Parse the created_at timestamp to discord timestamp format

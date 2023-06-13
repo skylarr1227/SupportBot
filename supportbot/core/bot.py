@@ -86,7 +86,8 @@ class SupportBot(commands.AutoShardedBot):
         FRESHDESK_API_KEY = os.environ.get("FRESHDESK_API_KEY")
         FRESHDESK_DOMAIN = os.environ.get("FRESHDESK_DOMAIN")
         self.logger = logging.Logger("supportbot")
-        self.supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
+        supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
+        self.supabase = supabase
         self.notion_client = AsyncClient(auth=NOTION_TOKEN)
         self.collection = self.notion_client.databases.retrieve("b48e1f0a4f2e4a758992ba1931a35669")
         self.openai = os.environ.get(OPENAI_KEY)
