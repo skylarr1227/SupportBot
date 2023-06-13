@@ -60,7 +60,7 @@ class Tickets(commands.Cog):
         embed = discord.Embed(title=f"Information for ID: {data['id']}", color=0x00ff00)
 
         # Parse the created_at timestamp to discord timestamp format
-        created_at = datetime.datetime.strptime(data['created_at'], "%Y-%m-%dT%H:%M:%S.%fZ")  # assuming the timestamp is in this format
+        created_at = datetime.datetime.strptime(data['created_at'].replace(":", ""), "%Y-%m-%dT%H:%M:%S.%f%z")
         embed.add_field(name="Created at", value=f"<t:{int(created_at.timestamp())}>")
 
         # Display images or clickable links
