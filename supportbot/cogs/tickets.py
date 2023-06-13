@@ -66,10 +66,11 @@ class Tickets(commands.Cog):
 
         # Display images or clickable links
         
-        embed.add_field(name=f"Image 1", value=f"{data['images'][1]}", inline=False)
-        embed.add_field(name=f"Image 2", value=f"{data['images'][2]}", inline=True)
-        embed.add_field(name=f"Image 3", value=f"{data['images'][3]}", inline=False)
-        embed.add_field(name=f"Image 4", value=f"{data['images'][4]}", inline=True)
+        if 'images' in data and isinstance(data['images'], dict):
+            for i in range(1, 5):
+                key = str(i)
+                if key in data['images']:
+                    embed.add_field(name=f"Image {i}", value=f"[Link]({data['images'][key]})", inline=False)
         # Display the prompt
         embed.add_field(name="Prompt", value=data['prompt'])
 
