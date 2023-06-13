@@ -65,10 +65,11 @@ class Tickets(commands.Cog):
         embed.add_field(name="Created at", value=f"<t:{int(created_at.timestamp())}>", inline=False)
 
         # Display images or clickable links
-        if data['images']:
-            for i, image in enumerate(data['images'], start=1):
-                embed.add_field(name=f"Image {i}", value=f"[{image}]({image})", inline=False)
-
+        
+        embed.add_field(name=f"Image 1", value=f"{data['image'][0]}", inline=False)
+        embed.add_field(name=f"Image 2", value=f"{data['image'][1]}", inline=True)
+        embed.add_field(name=f"Image 3", value=f"{data['image'][2]}", inline=False)
+        embed.add_field(name=f"Image 4", value=f"{data['image'][3]}", inline=True)
         # Display the prompt
         embed.add_field(name="Prompt", value=data['prompt'])
 
