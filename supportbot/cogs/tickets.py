@@ -60,22 +60,21 @@ class Tickets(commands.Cog):
         embed = discord.Embed(title=f"Information for ID: {data['id']}", color=0x00ff00)
 
         # Parse the created_at timestamp to discord timestamp format
-        created_at = datetime.datetime.strptime(data['created_at'], "%Y-%m-%dT%H:%M:%S.%f%z")
+        created_at = datetime.datetime.strptime(data['created_at'], "%Y-%m-%dT%H:%M:%S.%f%z", inline=False)
 
         embed.add_field(name="Created at", value=f"<t:{int(created_at.timestamp())}>")
 
         # Display images or clickable links
-        for i, img in enumerate(data['images'], start=1):
-            embed.add_field(name=f"Image {i}", value=f"[Link]({img})")
-            if i == 4:  # Only display 4 images
-                break
+        if data['images']:
+            for i, image in enumerate(data['images'], start=1):
+                embed.add_field(name=f"Image {i}", value=f"[{image}]({image})", inline=False)
 
         # Display the prompt
         embed.add_field(name="Prompt", value=data['prompt'])
 
         # Display the style
         embed.add_field(name="Style", value=data['style'])
-
+        embed.add_field(name="NSFW Triggered", value=data['nsfw_triggered'], inline=False)
         # Map platform numbers to strings
         platform_map = {0: "Web", 1: "Mobile", 2: "Wombot", 3: "All"}
         embed.add_field(name="Platform", value=platform_map.get(data['platform'], "Unknown"))
