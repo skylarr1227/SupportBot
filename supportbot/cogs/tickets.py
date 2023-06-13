@@ -66,10 +66,10 @@ class Tickets(commands.Cog):
 
         # Display images or clickable links
         
-        embed.add_field(name=f"Image 1", value=f"{data['image'][0]}", inline=False)
-        embed.add_field(name=f"Image 2", value=f"{data['image'][1]}", inline=True)
-        embed.add_field(name=f"Image 3", value=f"{data['image'][2]}", inline=False)
-        embed.add_field(name=f"Image 4", value=f"{data['image'][3]}", inline=True)
+        embed.add_field(name=f"Image 1", value=f"{data['images'][0]}", inline=False)
+        embed.add_field(name=f"Image 2", value=f"{data['images'][1]}", inline=True)
+        embed.add_field(name=f"Image 3", value=f"{data['images'][2]}", inline=False)
+        embed.add_field(name=f"Image 4", value=f"{data['images'][3]}", inline=True)
         # Display the prompt
         embed.add_field(name="Prompt", value=data['prompt'])
 
