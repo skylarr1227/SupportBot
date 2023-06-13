@@ -40,7 +40,7 @@ class Tickets(commands.Cog):
     
     async def get_data_from_supabase(self, id):
         # Use your API key here
-        response = await self.bot.supabase.from_("nsfw_tracking").select("*").eq("id", id).execute()
+        response = self.bot.supabase.from_("nsfw_tracking").select("*").eq("id", id).execute()
         if response.data:
             return response.data[0]
         else:
