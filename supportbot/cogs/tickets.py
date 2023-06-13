@@ -53,7 +53,7 @@ class Tickets(commands.Cog):
     @app_commands.checks.has_permissions(manage_messages=True)
     async def info(self, interaction, id: int):
         """Information about a failed NSFW prompt/check by id"""
-        data = self.get_data_from_supabase(id)
+        data = await self.get_data_from_supabase(id)
         if data is None:
             await interaction.response.send_message("ID not found.")
             return
