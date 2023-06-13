@@ -46,7 +46,10 @@ class Tickets(commands.Cog):
         return response.json()[0] 
 
 
-    @bot.command()
+    @support()
+    @app_commands.command()
+    @app_commands.default_permissions(manage_messages=True)
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def info(self, interaction, id: int):
         data = self.get_data_from_supabase(id)
         embed = discord.Embed(title=f"Information for ID: {data['id']}", color=0x00ff00)
@@ -71,7 +74,7 @@ class Tickets(commands.Cog):
         platform_map = {0: "Web", 1: "Mobile", 2: "Wombot", 3: "All"}
         embed.add_field(name="Platform", value=platform_map.get(data['platform'], "Unknown"))
 
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
     @support()
     @app_commands.command()
