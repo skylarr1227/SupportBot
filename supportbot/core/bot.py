@@ -88,16 +88,27 @@ class SupportBot(commands.AutoShardedBot):
         self.logger = logging.Logger("supportbot")
         supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
         self.supabase = supabase
-        self.notion_client = AsyncClient(auth=NOTION_TOKEN)
-        self.collection = self.notion_client.databases.retrieve("b48e1f0a4f2e4a758992ba1931a35669")
-        self.openai = os.environ.get(OPENAI_KEY)
+        self.NOTION_TOKEN = NOTION_TOKEN
+        #self.collection = self.notion_client.databases.retrieve("b48e1f0a4f2e4a758992ba1931a35669")
+        #self.openai = os.environ.get(OPENAI_KEY)
         self.SPECIFIC_POST_CHANNEL_ID = 1102722546232729620
-        self.openai = openai.api_key
+        #self.openai = openai.api_key
         self.api_key = FRESHDESK_API_KEY
         self.domain = FRESHDESK_DOMAIN
         self.api_url = f"https://{self.domain}.freshdesk.com/api/v2/"
 
-   
+    async def create_notion_client(self):
+        try:
+            self.notion_client = AsyncClient(auth=self.NOTION_TOKEN)
+            self.collection = self.notion_client.databases.retrieve("b48e1f0a4f2e4a758992ba1931a35669")
+        except Exception as e:
+            await self.on_error("create_notion_client", e)
+        return self.notion_client
+
+
+
+        
+
     async def analyze_sentiment_and_participation(self, thread_id):
         thread = self.get_channel(thread_id)
         if not isinstance(thread, discord.Thread):
@@ -153,7 +164,7 @@ class SupportBot(commands.AutoShardedBot):
     async def on_ready(self):
         self.logger.info(f'{self.user.name} has connected to Discord!')
         specific_post_channel = self.get_channel(1102722546232729620)
-        
+        await self.create_notion_client()
         if specific_post_channel is None:
             thread = await specific_post_channel.create_thread(
                 name="This is a test",content="Known issues will be listed here with links to each post")   
