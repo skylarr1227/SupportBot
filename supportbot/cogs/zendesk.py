@@ -4,13 +4,17 @@ from zenpy import Zenpy
 import pandas as pd
 from io import StringIO
 
+zentoken = os.environ.get("ZENTOKEN")
+zenmail = os.environ.get("ZENMAIL")
+
+
 class ZendeskCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.zenpy_client = Zenpy(**{
-            'email' : 'your_zendesk_email',
-            'token' : 'your_zendesk_token',
-            'subdomain' : 'your_zendesk_subdomain'
+            'email' : zenmail,
+            'token' : zentoken,
+            'subdomain' : 'wombo'
         })
 
     @commands.command()
