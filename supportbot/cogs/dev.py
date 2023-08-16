@@ -4,6 +4,10 @@ from supportbot.core.utils import team
 import os
 import aiohttp
 from datetime import datetime
+import asyncio
+from io import StringIO
+import sys
+import traceback
 
 API_PASS = os.environ.get("API_PASS")
 API_LINK = os.environ.get("API_LINK")
@@ -12,6 +16,59 @@ OS = discord.Object(id=774124295026376755)
 class Dev(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+    async def paginate(self, ctx, pages):
+        """Utility function to paginate embeds"""
+        current_page = 0
+        msg = await ctx.send(embed=pages[current_page])
+
+        # Add reactions
+        await msg.add_reaction("◀️")
+        await msg.add_reaction("▶️")
+
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"]
+
+        while True:
+            try:
+                reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
+
+                if str(reaction.emoji) == "▶️" and current_page < len(pages) - 1:
+                    current_page += 1
+                elif str(reaction.emoji) == "◀️" and current_page > 0:
+                    current_page -= 1
+
+                await msg.edit(embed=pages[current_page])
+                await msg.remove_reaction(reaction, user)
+
+            except asyncio.TimeoutError:
+                await msg.clear_reactions()
+                break
+
+    @team()
+    @commands.command(name='eval')
+    @commands.is_owner() 
+    async def _eval(self, ctx, *, code):
+        """
+        Executes a given code (Python).
+        """
+        old_stdout = sys.stdout
+        sys.stdout = output = StringIO()
+        try:
+            exec(code)
+        except Exception as e:
+            value = output.getvalue()
+            traceback_message = traceback.format_exc()
+            result = f"{value}\n{traceback_message}\n{str(e)}"
+        else:
+            value = output.getvalue()
+            result = value
+        sys.stdout = old_stdout
+        pages = [discord.Embed(title=f"Eval Result (Page {i+1}/{len(result)//1000 + 1})", description=f"```python\n{page}\n```", color=0x42f5f5) for i, page in enumerate([result[i:i+1000] for i in range(0, len(result), 1000)])]
+
+        await self.paginate(ctx, pages)
+
+
 
     @team()
     @commands.command()
