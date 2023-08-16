@@ -24,30 +24,26 @@ class UserMetricsCog(commands.Cog):
 
         # Retrieve existing metrics or initialize
         loop = asyncio.get_event_loop()
-
+    
         try:
             user_metrics_query = lambda: self.bot.supabase.table('user_metrics').select('metrics').eq('user_id', message.author.id).single().execute()
             user_metrics_response = await loop.run_in_executor(None, user_metrics_query)
             metrics = user_metrics_response['metrics']
-        except postgrest.exceptions.APIError as e:
-            if e.args[0]['code'] == 'PGRST116':
-                # No existing metrics found for the user; initialize as needed
-                metrics = {
-                    'activity_rating': 0,
-                    'daily_metrics': defaultdict(lambda: {'posts': 0, 'messages': 0})
-                }
-                # Insert new row for the user
-                payload = {
-                    'user_id': message.author.id,
-                    'metrics': metrics
-                }
-                insert_query = lambda: self.bot.supabase.table('user_metrics').insert(payload).execute()
-                await loop.run_in_executor(None, insert_query)
-            else:
-                # Handle other errors as needed
-                pass
-
-
+        except postgrest.exceptions.APIError:
+            # No existing metrics found for the user; initialize as needed
+            metrics = {
+                'activity_rating': 0,
+                'daily_metrics': defaultdict(lambda: {'posts': 0, 'messages': 0})
+            }
+            # Insert new row for the user
+            payload = {
+                'user_id': message.author.id,
+                'metrics': metrics
+            }
+            insert_query = lambda: self.bot.supabase.table('user_metrics').insert(payload).execute()
+            await loop.run_in_executor(None, insert_query)
+    
+    
         # Specific channel ID to exclude from normal messages count
         exclude_channel_id = 1132716536478568568
 
