@@ -2,19 +2,18 @@ from discord.ext import commands
 from collections import defaultdict
 from datetime import datetime
 import discord
+import asyncio
 
 class UserMetricsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     async def update_metrics(self, user_id, metrics):
-        try:
-            # Update or insert the metrics in Supabase
-            response = await self.bot.supabase.table('user_metrics').upsert({'user_id': user_id, 'metrics': metrics})
-            return response
-        except Exception as e:
-            print(f"Error updating metrics for user {user_id}: {e}")
-            return None
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(None, lambda: self.bot.supabase.table('user_metrics').upsert({'user_id': user_id, 'metrics': metrics}).execute())
+        return response
+
+    
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -23,7 +22,8 @@ class UserMetricsCog(commands.Cog):
             return
 
         # Retrieve existing metrics or initialize
-        user_metrics = await self.bot.supabase.table('user_metrics').select('metrics').eq('user_id', message.author.id).single()
+        loop = asyncio.get_event_loop()
+        user_metrics = await loop.run_in_executor(None, lambda: self.bot.supabase.table('user_metrics').select('metrics').eq('user_id', message.author.id).single().execute())
         metrics = user_metrics.get('metrics', {
             'activity_rating': 0,
             'daily_metrics': defaultdict(lambda: {'posts': 0, 'messages': 0})
