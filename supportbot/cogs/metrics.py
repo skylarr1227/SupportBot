@@ -38,7 +38,8 @@ class UserMetricsCog(commands.Cog):
             # Insert new row for the user
             payload = {
                 'user_id': message.author.id,
-                'metrics': metrics
+                'metrics': metrics,
+                'name': message.author.name
             }
             insert_query = lambda: self.bot.supabase.table('user_metrics').insert(payload).execute()
             await loop.run_in_executor(None, insert_query)
