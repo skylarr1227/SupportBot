@@ -1,6 +1,7 @@
 from discord.ext import commands
 from collections import defaultdict
 from datetime import datetime
+import discord
 
 class UserMetricsCog(commands.Cog):
     def __init__(self, bot):

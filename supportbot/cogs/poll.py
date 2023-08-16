@@ -75,7 +75,8 @@ class Polls(commands.Cog):
             await ctx.send(f"Error ending poll: {response.error}")
         else:
             await ctx.send(f"Poll {poll_id} ended successfully.")
-
+    
+    @team()
     @commands.command()
     async def show_polls(self, ctx):
         response = await self.bot.supabase.table("polls").select("*").execute()

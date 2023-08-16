@@ -3,6 +3,7 @@ from discord.ext import commands
 from zenpy import Zenpy
 import pandas as pd
 from io import StringIO
+import os
 
 zentoken = os.environ.get("ZENTOKEN")
 zenmail = os.environ.get("ZENMAIL")
