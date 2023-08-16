@@ -24,11 +24,13 @@ class UserMetricsCog(commands.Cog):
 
         # Retrieve existing metrics or initialize
         loop = asyncio.get_event_loop()
-    
+
         try:
             user_metrics_query = lambda: self.bot.supabase.table('user_metrics').select('metrics').eq('user_id', message.author.id).single().execute()
             user_metrics_response = await loop.run_in_executor(None, user_metrics_query)
-            metrics = user_metrics_response['metrics']
+            print(user_metrics_response.__dict__)  # Debug print to check the structure
+            # Adjust the following line based on the printed structure
+            metrics = user_metrics_response.data['metrics']
         except postgrest.exceptions.APIError:
             # No existing metrics found for the user; initialize as needed
             metrics = {
@@ -42,8 +44,8 @@ class UserMetricsCog(commands.Cog):
             }
             insert_query = lambda: self.bot.supabase.table('user_metrics').insert(payload).execute()
             await loop.run_in_executor(None, insert_query)
-    
-    
+
+
         # Specific channel ID to exclude from normal messages count
         exclude_channel_id = 1132716536478568568
 
