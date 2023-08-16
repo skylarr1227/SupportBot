@@ -26,14 +26,21 @@ class UserMetricsCog(commands.Cog):
         user_metrics_query = lambda: self.bot.supabase.table('user_metrics').select('metrics').eq('user_id', message.author.id).execute()
         user_metrics_response = await loop.run_in_executor(None, user_metrics_query)
     
-        if user_metrics_response['code'] == 'PGRST116':
+        if user_metrics_response.error and user_metrics_response.error['code'] == 'PGRST116':
             # No existing metrics found for the user; initialize as needed
             metrics = {
                 'activity_rating': 0,
                 'daily_metrics': defaultdict(lambda: {'posts': 0, 'messages': 0})
             }
+            # Insert new row for the user
+            payload = {
+                'user_id': message.author.id,
+                'metrics': metrics
+            }
+            insert_query = lambda: self.bot.supabase.table('user_metrics').insert(payload).execute()
+            await loop.run_in_executor(None, insert_query)
         else:
-            metrics = user_metrics_response.get('metrics', {
+            metrics = user_metrics_response.data[0].get('metrics', {
                 'activity_rating': 0,
                 'daily_metrics': defaultdict(lambda: {'posts': 0, 'messages': 0})
             })
