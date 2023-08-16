@@ -27,5 +27,5 @@ class ZendeskCog(commands.Cog):
         csv_buffer.seek(0)
         await ctx.send(file=discord.File(fp=csv_buffer, filename='tickets.csv'))
 
-def setup(bot):
-    bot.add_cog(ZendeskCog(bot))
+async def setup(bot):
+    await bot.add_cog(ZendeskCog(bot))
