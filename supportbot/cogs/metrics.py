@@ -63,7 +63,8 @@ class UserMetricsCog(commands.Cog):
 
         # Current date as a string
         current_date = datetime.today().strftime('%Y-%m-%d')
-
+        if current_date not in metrics['daily_metrics']:
+            metrics['daily_metrics'][current_date] = {'posts': 0, 'messages': 0, 'replies': 0}
         # Check if it's a new post in a forum channel
         if isinstance(message.channel, discord.Thread) and message.type == discord.MessageType.default and not message.reference:
             points = 10 if message.attachments else 5
@@ -101,7 +102,7 @@ class UserMetricsCog(commands.Cog):
             insert_query = lambda: self.bot.supabase.table('user_metrics').insert(payload).execute()
             await loop.run_in_executor(None, insert_query)
             return {'metrics': metrics}
-    
+
     @commands.command(name='viprank')
     async def my_rank(self, ctx):
         user_metrics_response = await self.get_or_create_metrics(ctx.author.id)
