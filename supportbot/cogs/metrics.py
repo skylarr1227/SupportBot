@@ -107,7 +107,7 @@ class UserMetricsCog(commands.Cog):
             if user is None:
                 username = "Unknown User"
             else:
-                username = user.name
+                username = user
 
             leaderboard_text += f"{position}. {username} - ({entry['metrics']['activity_rating']} points) **{rank}**\n"
 
