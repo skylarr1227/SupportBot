@@ -91,26 +91,26 @@ class UserMetricsCog(commands.Cog):
     @commands.command(name='toptesters')
     async def leaderboard(self, ctx):
         # Retrieve all user metrics
-        user_metrics_query = self.bot.supabase.table('user_metrics').select('user_id, metrics').execute()
+        user_metrics_query = self.bot.supabase.table('user_metrics').select('user_id, metrics', 'name').execute()
         user_metrics = user_metrics_query.data
-    
+
         # Sort by activity points and take top 10
         leaderboard = sorted(user_metrics, key=lambda x: x['metrics']['activity_rating'], reverse=True)[:10]
-    
+
         # Build the leaderboard message
         leaderboard_text = ""
         for position, entry in enumerate(leaderboard, 1):
-            user = self.bot.get_user(entry['user_id'])
+            user = entry['name']
             rank = self.calculate_rank(entry['metrics']['activity_rating'])
-    
+
             # Check if the user is None, and handle accordingly
             if user is None:
                 username = "Unknown User"
             else:
                 username = user.name
-    
+
             leaderboard_text += f"{position}. {username} - ({entry['metrics']['activity_rating']} points) **{rank}**\n"
-    
+
         await ctx.send(f"🏆 Top Testers 🏆\n{leaderboard_text}")
 
 
