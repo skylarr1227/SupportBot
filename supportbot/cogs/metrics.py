@@ -163,12 +163,15 @@ class UserMetricsCog(commands.Cog):
                     posts_per_day[date] += counts['posts']
                     messages_per_day[date] += counts['messages']
                 # Role-based metrics logic ...
-                user_roles = user['metrics']['roles']
-                for role_id in specific_roles:
-                    if str(role_id) in user_roles:
-                        role_metrics[role_id]['activity_rating'] += user['metrics']['activity_rating']
-                        role_metrics[role_id]['posts'] += user['metrics']['posts']
-                        role_metrics[role_id]['messages'] += user['metrics']['messages']
+                user_roles = user['metrics'].get('roles', {})
+                if user_roles:
+                    # Role-based metrics logic ...
+                    for role_id in specific_roles:
+                        if str(role_id) in user_roles:
+                            role_metrics[role_id]['activity_rating'] += user['metrics']['activity_rating']
+                            role_metrics[role_id]['posts'] += user['metrics']['posts']
+                            role_metrics[role_id]['messages'] += user['metrics']['messages']
+
 
             # Format summary text
             summary_text = f"Top 10 Active Users:\n{top_10_active_users_text}\n\n"
