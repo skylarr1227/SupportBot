@@ -147,7 +147,7 @@ class UserMetricsCog(commands.Cog):
             
             # Top 10 active users
             top_10_active_users = sorted(all_metrics, key=lambda x: x['metrics']['activity_rating'], reverse=True)[:10]
-            top_10_active_users_text = "\n".join([f"User {user['user_id']}: {user['metrics']['activity_rating']} points" for user in top_10_active_users])
+            top_10_active_users_text = "\n".join([f"User {user['name']}: {user['metrics']['activity_rating']} points" for user in top_10_active_users])
 
             # Initialize counters for posts and messages per day
             posts_per_day = defaultdict(int)
