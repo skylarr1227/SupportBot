@@ -177,11 +177,11 @@ class SupportBot(commands.AutoShardedBot):
 
 
     async def on_error(self, ctx, error):
-        if isinstance(error, (commands.NotFound, commands.CheckFailure)):
+        if isinstance(error, (commands.CommandNotFound, commands.CheckFailure)):
             return
         await super().on_error(ctx, error)
     
     async def start(self, *args, **kwargs):
-        for cogname in ("events", "dev", "tickets"):
+        for cogname in ("events", "dev", "tickets", "metrics", "zendesk"):
             await self.load_extension(f"supportbot.cogs.{cogname}")
         await super().start(*args, **kwargs)
