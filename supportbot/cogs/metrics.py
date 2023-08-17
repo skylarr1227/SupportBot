@@ -81,6 +81,27 @@ class UserMetricsCog(commands.Cog):
         # Update the metrics in Supabase
         await self.update_metrics(message.author.id, metrics)
 
+    async def get_or_create_metrics(self, user_id):
+        loop = asyncio.get_event_loop()
+        try:
+            user_metrics_query = lambda: self.bot.supabase.table('user_metrics').select('metrics').eq('user_id', user_id).single().execute()
+            user_metrics_response = await loop.run_in_executor(None, user_metrics_query)
+            return user_metrics_response.data
+        except postgrest.exceptions.APIError:
+            # No existing metrics found for the user; initialize as needed
+            metrics = {
+                'activity_rating': 0,
+                'daily_metrics': defaultdict(lambda: {'posts': 0, 'messages': 0})
+            }
+            # Insert new row for the user
+            payload = {
+                'user_id': user_id,
+                'metrics': metrics
+            }
+            insert_query = lambda: self.bot.supabase.table('user_metrics').insert(payload).execute()
+            await loop.run_in_executor(None, insert_query)
+            return {'metrics': metrics}
+    
     @commands.command(name='viprank')
     async def my_rank(self, ctx):
         user_metrics_response = await self.get_or_create_metrics(ctx.author.id)
@@ -118,7 +139,10 @@ class UserMetricsCog(commands.Cog):
     async def get_summary_metrics(self, ctx):
         try:
             # Retrieve all metrics
-            all_metrics = await self.bot.supabase.table('user_metrics').select('*')
+            loop = asyncio.get_event_loop()
+            all_metrics_query = lambda: self.bot.supabase.table('user_metrics').select('*').execute()
+            all_metrics_response = await loop.run_in_executor(None, all_metrics_query)
+            all_metrics = all_metrics_response.data
             
             # Top 10 active users
             top_10_active_users = sorted(all_metrics, key=lambda x: x['metrics']['activity_rating'], reverse=True)[:10]
