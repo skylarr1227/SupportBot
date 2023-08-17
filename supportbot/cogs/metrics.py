@@ -102,7 +102,14 @@ class UserMetricsCog(commands.Cog):
         for position, entry in enumerate(leaderboard, 1):
             user = self.bot.get_user(entry['user_id'])
             rank = self.calculate_rank(entry['metrics']['activity_rating'])
-            leaderboard_text += f"{position}. {user.name} - ({entry['metrics']['activity_rating']} points) **{rank}**\n"
+    
+            # Check if the user is None, and handle accordingly
+            if user is None:
+                username = "Unknown User"
+            else:
+                username = user.name
+    
+            leaderboard_text += f"{position}. {username} - ({entry['metrics']['activity_rating']} points) **{rank}**\n"
     
         await ctx.send(f"🏆 Top Testers 🏆\n{leaderboard_text}")
 
