@@ -14,7 +14,21 @@ class UserMetricsCog(commands.Cog):
         response = await loop.run_in_executor(None, lambda: self.bot.supabase.table('user_metrics').upsert({'user_id': user_id, 'metrics': metrics}).execute())
         return response
 
-    
+    def calculate_rank(self, points):
+        milestones = [
+            (0, "Novice"),
+            (51, "Apprentice"),
+            (201, "Journeyman"),
+            (501, "Craftsman"),
+            (1001, "Artisan"),
+            (2001, "Expert"),
+            (4001, "Master"),
+            (8001, "WOMBO Wizard"),
+        ]
+        for milestone, rank in reversed(milestones):
+            if points >= milestone:
+                return rank
+        return "Novice"  # Default rank if points are somehow negative
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -33,7 +47,7 @@ class UserMetricsCog(commands.Cog):
             # No existing metrics found for the user; initialize as needed
             metrics = {
                 'activity_rating': 0,
-                'daily_metrics': defaultdict(lambda: {'posts': 0, 'messages': 0})
+                'daily_metrics': defaultdict(lambda: {'posts': 0, 'replies': 0, 'messages': 0})
             }
             # Insert new row for the user
             payload = {
@@ -51,10 +65,14 @@ class UserMetricsCog(commands.Cog):
         current_date = datetime.today().strftime('%Y-%m-%d')
 
         # Check if it's a new post in a forum channel
-        if isinstance(message.channel, discord.Thread):
+        if isinstance(message.channel, discord.Thread) and message.type == discord.MessageType.default and not message.reference:
             points = 10 if message.attachments else 5
             metrics['daily_metrics'][current_date]['posts'] += 1
             metrics['activity_rating'] += points
+        elif isinstance(message.channel, discord.Thread):
+            # Reply in a thread
+            metrics['daily_metrics'][current_date]['replies'] += 1
+            metrics['activity_rating'] += 2
         elif message.channel.id != exclude_channel_id:
             # Normal message outside the specific channel
             metrics['daily_metrics'][current_date]['messages'] += 1
@@ -62,6 +80,32 @@ class UserMetricsCog(commands.Cog):
 
         # Update the metrics in Supabase
         await self.update_metrics(message.author.id, metrics)
+
+    @commands.command(name='viprank')
+    async def my_rank(self, ctx):
+        user_metrics_response = await self.get_or_create_metrics(ctx.author.id)
+        points = user_metrics_response['metrics']['activity_rating']
+        rank = self.calculate_rank(points)
+        await ctx.send(f"{ctx.author.mention}, your tester rank is **{rank}**.") # with **{points}** points.
+
+    @commands.command(name='toptesters')
+    async def leaderboard(self, ctx):
+        # Retrieve all user metrics
+        user_metrics_query = self.bot.supabase.table('user_metrics').select('user_id, metrics').execute()
+        user_metrics = user_metrics_query.data
+    
+        # Sort by activity points and take top 10
+        leaderboard = sorted(user_metrics, key=lambda x: x['metrics']['activity_rating'], reverse=True)[:10]
+    
+        # Build the leaderboard message
+        leaderboard_text = ""
+        for position, entry in enumerate(leaderboard, 1):
+            user = self.bot.get_user(entry['user_id'])
+            rank = self.calculate_rank(entry['metrics']['activity_rating'])
+            leaderboard_text += f"{position}. {user.display_name} - ({entry['metrics']['activity_rating']} points) **{rank}**\n"
+    
+        await ctx.send(f"🏆 Top Testers 🏆\n{leaderboard_text}")
+
 
     @commands.command(name='get_summary_metrics')
     async def get_summary_metrics(self, ctx):
