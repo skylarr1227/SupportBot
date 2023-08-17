@@ -23,7 +23,8 @@ async def store_in_supabase(bot, old_status, new_status, thread, executor, autho
         'original_message': original_message
     }
     # Insert the data into the Supabase "tickets" table
-    response = bot.supabase.table("tickets").insert(payload).execute()
+    loop = asyncio.get_event_loop()
+    response = await loop.run_in_executor(None, bot.supabase.table("tickets").insert(payload).execute)
     return response
 
 
