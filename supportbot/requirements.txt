@@ -4,4 +4,5 @@ supabase==1.0.3
 supabase-py==0.0.2
 python-dotenv
 notion-client
+asyncio
 
