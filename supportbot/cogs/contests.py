@@ -18,7 +18,8 @@ class Contests(commands.Cog):
         self.debug = False
         self.time_offset = 0
         self.accepting_images = True
-        self.phase_message = None  
+        self.phase_message = None
+        self.bot.loop.create_task(self.initialize_contest())  
         self.bot.loop.create_task(self.check_time())
         self.bot.loop.create_task(self.count_votes())
 
@@ -90,8 +91,7 @@ class Contests(commands.Cog):
         result = await self.execute_supabase_query(query.execute)
         return result.data[0][day_of_week] if result else None
 
-    @commands.Cog.listener()
-    async def on_ready(self):
+    async def initialize_contest(self):
         theme_channel = self.bot.get_channel(THEME_CHANNEL_ID)
         theme = await self.get_theme()
         await theme_channel.send(f"Today's theme is: {theme}")
