@@ -94,7 +94,7 @@ class Contests(commands.Cog):
     async def initialize_contest(self):
         theme_channel = self.bot.get_channel(THEME_CHANNEL_ID)
         theme = await self.get_theme()
-        await theme_channel.send(f"Today's theme is: {theme}")
+        await theme_channel.send(f"Today's theme is:\n {theme}")
         # Send initial phase message
         self.phase_message = await theme_channel.send("Initializing contest phase...")
         await self.update_phase()
