@@ -119,7 +119,7 @@ class Contests(commands.Cog):
 
     async def inspect_image(self, user_id, image_url):
         channel = self.bot.get_channel(INSPECTION_CHANNEL_ID)  
-        message = await channel.send(f"New image submission from <@{user_id}> for inspection:", embed=discord.Embed().set_image(url=image_url))
+        message = await channel.send(embed=discord.Embed(description="New image submission from <@{user_id}> for inspection:").set_image(url=image_url))
         await message.add_reaction("👍")
         await message.add_reaction("👎")
 
@@ -157,10 +157,11 @@ class Contests(commands.Cog):
             channel = self.bot.get_channel(payload.channel_id)
             message = await channel.fetch_message(payload.message_id)
 
-            if str(payload.emoji) == "👍":
+            if message.embeds and message.embeds[0].description:
                 user_id = message.embeds[0].description.split("<@")[1].split(">")[0]
-                image_url = message.embeds[0].image.url
-                await self.post_image(user_id, image_url)
+                if str(payload.emoji) == "👍":
+                    image_url = message.embeds[0].image.url
+                    await self.post_image(user_id, image_url)
 
     async def check_time(self):
         last_phase = None
