@@ -8,7 +8,7 @@ import asyncio
 from io import StringIO
 import sys
 import traceback
-
+GREEN = "\N{LARGE GREEN CIRCLE}"
 API_PASS = os.environ.get("API_PASS")
 API_LINK = os.environ.get("API_LINK")
 OS = discord.Object(id=774124295026376755)
@@ -65,9 +65,19 @@ class Dev(commands.Cog):
             result = value
         sys.stdout = old_stdout
         pages = [discord.Embed(title=f"Eval Result (Page {i+1}/{len(result)//1000 + 1})", description=f"```python\n{page}\n```", color=0x42f5f5) for i, page in enumerate([result[i:i+1000] for i in range(0, len(result), 1000)])]
-
         await self.paginate(ctx, pages)
 
+    @team()
+    @commands.command()
+    async def cogs(self, ctx):
+        """View the currently loaded cogs."""
+        cogs = sorted([x.replace("cogs.", "") for x in ctx.bot.extensions.keys()])
+        embed = discord.Embed(
+            title=f"{len(cogs)} loaded:",
+            description=f" - {GREEN}\n".join(cogs),
+            color=0xFF0060,
+        )
+        await ctx.send(embed=embed)
 
 
     @team()

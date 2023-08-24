@@ -6,11 +6,13 @@ from discord.ext import commands
 import discord
 import functools
 from supportbot.core.utils import team
+import os
 
-THEME_CHANNEL_ID = 1141383309591588934
+THEME_CHANNEL_ID = 1144325882257887312
 INSPECTION_CHANNEL_ID = 1144006598709219429
 PUBLIC_VOTING_CHANNEL_ID = 1144006673829199942
 XP_AWARDS = [100, 80, 60, 40, 20] # XP for 1st to 5th places
+STRIPE_AUTH = os.environ.get("STRIPE_AUTH")
 
 class Contests(commands.Cog):
     def __init__(self, bot):
@@ -182,27 +184,27 @@ class Contests(commands.Cog):
             if now.hour == 22:
                 channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID)
                 vote_counts = {}
-                result = await self.bot.supabase.table('users').select('u_id, message_id').execute()
-
-                for row in result.data:
-                    message = await channel.fetch_message(row['message_id'])
-                    for reaction in message.reactions:
-                        if str(reaction.emoji) == "👍":
-                            vote_counts[row['u_id']] = reaction.count
-
-                winners = sorted(vote_counts, key=vote_counts.get, reverse=True)[:5]
-                await channel.send(f"The winners are: {', '.join(f'<@{winner}>' for winner in winners)}")
-
-                # Update XP and levels for winners
-                for i, winner in enumerate(winners):
-                    query = self.bot.supabase.table('users').select('u_id, xp, level').filter('u_id', 'eq', winner).single()
-                    user = await self.execute_supabase_query(query.execute)
-                    if user and user.data:
-                        new_xp = user.data['xp'] + XP_AWARDS[i]
-                        new_level = new_xp // 100  # each level requires 100 XP
-                        query = self.bot.supabase.table('users').update({'xp': new_xp, 'level': new_level}).match({'u_id': winner})
-                        await self.execute_supabase_query(query.execute)
+                query = self.bot.supabase.table('users').select('u_id, message_id')
+                result = await self.execute_supabase_query(query.execute)
+                if result and result.data:
+                    for row in result.data:
+                        message = await channel.fetch_message(row['message_id'])
+                        for reaction in message.reactions:
+                            if str(reaction.emoji) == "👍":
+                                vote_counts[row['u_id']] = reaction.count
+                    winners = sorted(vote_counts, key=vote_counts.get, reverse=True)[:5]
+                    await channel.send(f"The winners are: {', '.join(f'<@{winner}>' for winner in winners)}")
+                    # Update XP and levels for winners
+                    for i, winner in enumerate(winners):
+                        query = self.bot.supabase.table('users').select('u_id, xp, level').filter('u_id', 'eq', winner).single()
+                        user = await self.execute_supabase_query(query.execute)
+                        if user and user.data:
+                            new_xp = user.data['xp'] + XP_AWARDS[i]
+                            new_level = new_xp // 100  # each level requires 100 XP
+                            query = self.bot.supabase.table('users').update({'xp': new_xp, 'level': new_level}).match({'u_id': winner})
+                            await self.execute_supabase_query(query.execute)
             await asyncio.sleep(60)
+
 
 async def setup(bot):
     await bot.add_cog(Contests(bot))
