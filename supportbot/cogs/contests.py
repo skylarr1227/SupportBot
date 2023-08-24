@@ -14,7 +14,10 @@ XP_AWARDS = [100, 80, 60, 40, 20] # XP for 1st to 5th places
 class Contests(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.debug = False
+        self.time_offset = 0
         self.accepting_images = True
+        self.phase_message = None  
         self.bot.loop.create_task(self.check_time())
         self.bot.loop.create_task(self.count_votes())
 
@@ -23,8 +26,19 @@ class Contests(commands.Cog):
             loop = asyncio.get_running_loop()
             return await loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
         except Exception as e:
-            print(f"An error occurred while executing the query: {e}")  # Logging the error
+            print(f"An error occurred while executing the query: {e}")  # Logging 
             return None
+
+    @commands.command(name='setdebug')
+    async def set_debug(self, ctx, debug: bool):
+        self.debug = debug
+        status = "enabled" if debug else "disabled"
+        await ctx.send(f"Debug mode has been {status}.")
+
+    @commands.command(name='setoffset')
+    async def set_offset(self, ctx, offset: int):
+        self.time_offset = offset
+        await ctx.send(f"Time offset has been set to {offset} hours.")
 
     @commands.command(aliases=['level'])
     async def xp(self, ctx):
@@ -67,9 +81,27 @@ class Contests(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        theme_channel = self.bot.get_channel(THEME_CHANNEL_ID)
         theme = await self.get_theme()
-        channel = self.bot.get_channel(THEME_CHANNEL_ID)  
-        await channel.send(f"Today's theme is: {theme}")
+        await theme_channel.send(f"Today's theme is: {theme}")
+        # Send initial phase message
+        self.phase_message = await theme_channel.send("Initializing contest phase...")
+        await self.update_phase()
+
+    async def update_phase(self):
+        now = datetime.now(timezone('UTC')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('UTC'))
+        if now.hour < 21:
+            phase = "In Progress"
+            self.accepting_images = True
+        elif now.hour == 21:
+            phase = "Voting"
+            self.accepting_images = False
+        else:
+            phase = "Downtime"
+            self.accepting_images = False
+        if self.phase_message:
+            await self.phase_message.edit(content=f"The contest is now in the {phase} phase.")
+
 
     async def inspect_image(self, user_id, image_url):
         channel = self.bot.get_channel(INSPECTION_CHANNEL_ID)  
@@ -117,17 +149,24 @@ class Contests(commands.Cog):
                 await self.post_image(user_id, image_url)
 
     async def check_time(self):
+        last_phase = None
         while True:
-            now = datetime.now(timezone('UTC'))
-            if now.hour == 21:
-                self.accepting_images = False
+            now = datetime.now(timezone('UTC')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('UTC'))
+            if now.hour < 21:
+                phase = "In Progress"
+            elif now.hour == 21:
+                phase = "Voting"
             else:
-                self.accepting_images = True
+                phase = "Downtime"
+            if phase != last_phase:
+                await self.update_phase()
+                last_phase = phase
             await asyncio.sleep(60)
+
 
     async def count_votes(self):
         while True:
-            now = datetime.now(timezone('UTC'))
+            now = datetime.now(timezone('UTC')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('UTC'))
             if now.hour == 22:
                 channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID)
                 vote_counts = {}
