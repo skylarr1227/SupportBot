@@ -41,7 +41,8 @@ class Contests(commands.Cog):
     @commands.command(name='setoffset')
     async def set_offset(self, ctx, offset: int):
         self.time_offset = offset
-        await ctx.send(f"Time offset has been set to {offset} hours.")
+        await self.update_phase()  # Immediately update the phase
+        await ctx.send(f"Time offset has been set to {offset} hours, and the phase has been updated.")
 
     @commands.command(aliases=['level'])
     async def xp(self, ctx):
