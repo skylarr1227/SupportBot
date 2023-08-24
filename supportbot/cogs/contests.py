@@ -49,10 +49,16 @@ class Contests(commands.Cog):
         if user_data and user_data.data:
             xp = user_data.data['xp']
             level = user_data.data['level']
-            xp_next_level = 100 * (level + 1)  # Assuming 100 XP per level
-            percentage = (xp - (100 * level)) * 10 // (xp_next_level - (100 * level))
+            if xp == 0:
+                percentage = 0
+            else:
+                xp_next_level = 100 * (level + 1)
+                percentage = (xp - (100 * level)) * 10 // (xp_next_level - (100 * level))
+
+            
 
             progress_bar = {
+                0: "╍╍╍╍╍╍╍╍╍╍ 0%",
                 10: "<:10:1139230034217947237> ▰╍╍╍╍╍╍╍╍╍ 10%",
                 20: "<:20:1139230035711119411> ▰▰╍╍╍╍╍╍╍╍ 20%",
                 30: "<:30:1139230037405610205> ▰▰▰╍╍╍╍╍╍╍ 30%",
@@ -67,7 +73,10 @@ class Contests(commands.Cog):
 
             await ctx.send(f"Your XP progress to next level:\n{progress_bar[percentage]}")
         else:
-            await ctx.send("Could not retrieve your information.")
+            # User not found in 'users' table, insert with default values
+            query = self.bot.supabase.table('users').insert({'u_id': user_id, 'xp': 0, 'level': 0})
+            await self.execute_supabase_query(query.execute)
+            await ctx.send("Welcome! You have been added to the system. You are at level 0 with 0 XP.")
 
 
 
