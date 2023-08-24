@@ -5,6 +5,7 @@ from pytz import timezone
 from discord.ext import commands
 import discord
 import functools
+from supportbot.core.utils import team
 
 THEME_CHANNEL_ID = 1141383309591588934
 INSPECTION_CHANNEL_ID = 1144006598709219429
@@ -28,13 +29,14 @@ class Contests(commands.Cog):
         except Exception as e:
             print(f"An error occurred while executing the query: {e}")  # Logging 
             return None
-
+    @team()
     @commands.command(name='setdebug')
     async def set_debug(self, ctx, debug: bool):
         self.debug = debug
         status = "enabled" if debug else "disabled"
         await ctx.send(f"Debug mode has been {status}.")
 
+    @team()
     @commands.command(name='setoffset')
     async def set_offset(self, ctx, offset: int):
         self.time_offset = offset
