@@ -15,7 +15,7 @@ XP_AWARDS = [100, 80, 60, 40, 20] # XP for 1st to 5th places
 class Contests(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.debug = False
+        self.debug = True
         self.time_offset = 0
         self.accepting_images = True
         self.phase_message = None
