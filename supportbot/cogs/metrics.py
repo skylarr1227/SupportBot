@@ -35,7 +35,8 @@ class UserMetricsCog(commands.Cog):
         # Check for specific server ID and bot messages
         if message.guild.id != 914705867855773746 or message.author.bot:
             return
-
+        if isinstance(message.channel, discord.DMChannel):
+            return
         # Retrieve existing metrics or initialize
         loop = asyncio.get_event_loop()
 

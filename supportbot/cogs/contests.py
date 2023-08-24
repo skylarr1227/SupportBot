@@ -119,13 +119,13 @@ class Contests(commands.Cog):
 
     async def inspect_image(self, user_id, image_url):
         channel = self.bot.get_channel(INSPECTION_CHANNEL_ID)  
-        message = await channel.send(embed=discord.Embed(description="New image submission from <@{user_id}> for inspection:").set_image(url=image_url))
+        message = await channel.send(embed=discord.Embed(description=f"New image submission from <@{user_id}> for inspection:").set_image(url=image_url))
         await message.add_reaction("👍")
         await message.add_reaction("👎")
 
     async def post_image(self, user_id, image_url):
         channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID) 
-        message = await channel.send(f"Image submission from <@{user_id}>:", embed=discord.Embed().set_image(url=image_url))
+        message = await channel.send(embed=discord.Embed(description=f"Image submission from <@{user_id}>:").set_image(url=image_url))
         await message.add_reaction("👍")
         query = self.bot.supabase.table('users').update({'message_id': message.id}).match({'u_id': user_id})
         await self.execute_supabase_query(query.execute)
