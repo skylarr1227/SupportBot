@@ -4,10 +4,12 @@ from datetime import datetime, timedelta
 from pytz import timezone
 from discord.ext import commands
 import discord
+import functools
 
-THEME_CHANNEL_ID = 
-INSPECTION_CHANNEL_ID = 
-PUBLIC_VOTING_CHANNEL_ID = 
+THEME_CHANNEL_ID = 1141383309591588934
+INSPECTION_CHANNEL_ID = 1144006598709219429
+PUBLIC_VOTING_CHANNEL_ID = 1144006673829199942
+XP_AWARDS = [100, 80, 60, 40, 20] # XP for 1st to 5th places
 
 class Contests(commands.Cog):
     def __init__(self, bot):
@@ -16,12 +18,52 @@ class Contests(commands.Cog):
         self.bot.loop.create_task(self.check_time())
         self.bot.loop.create_task(self.count_votes())
 
+    async def execute_supabase_query(self, func, *args, **kwargs):
+        try:
+            loop = asyncio.get_running_loop()
+            return await loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
+        except Exception as e:
+            print(f"An error occurred while executing the query: {e}")  # Logging the error
+            return None
+
+    @commands.command(aliases=['level'])
+    async def xp(self, ctx):
+        user_id = str(ctx.author.id)
+        query = self.bot.supabase.table('users').select('xp, level').filter('u_id', 'eq', user_id).single()
+        user_data = await self.execute_supabase_query(query.execute)
+
+        if user_data and user_data.data:
+            xp = user_data.data['xp']
+            level = user_data.data['level']
+            xp_next_level = 100 * (level + 1)  # Assuming 100 XP per level
+            percentage = (xp - (100 * level)) * 10 // (xp_next_level - (100 * level))
+
+            progress_bar = {
+                10: "<:10:1139230034217947237> ▰╍╍╍╍╍╍╍╍╍ 10%",
+                20: "<:20:1139230035711119411> ▰▰╍╍╍╍╍╍╍╍ 20%",
+                30: "<:30:1139230037405610205> ▰▰▰╍╍╍╍╍╍╍ 30%",
+                40: "<:40:1139230021307863140> ▰▰▰▰╍╍╍╍╍╍ 40%",
+                50: "<:50:1139230023673462845> ▰▰▰▰▰╍╍╍╍╍ 50%",
+                60: "<:60:1139230026030649374> ▰▰▰▰▰▰╍╍╍╍ 60%",
+                70: "<:70:1139230027767099412> ▰▰▰▰▰▰▰╍╍╍ 70%",
+                80: "<:80:1139230029528715364> ▰▰▰▰▰▰▰▰╍╍ 80%",
+                90: "<:90:1139230030757626016> ▰▰▰▰▰▰▰▰▰╍ 90%",
+                100: "<:100:1139230032968040479> ▰▰▰▰▰▰▰▰▰▰ 100%",
+            }
+
+            await ctx.send(f"Your XP progress to next level:\n{progress_bar[percentage]}")
+        else:
+            await ctx.send("Could not retrieve your information.")
+
+
+
     async def get_theme(self):
         now = datetime.now(timezone('UTC'))
         week_of_year = now.isocalendar()[1]
         day_of_week = calendar.day_name[now.weekday()].lower()
-        result = await self.bot.supabase.table("contests").select(day_of_week).filter('week', 'eq', week_of_year).execute()
-        return result.data[0][day_of_week]
+        query = self.bot.supabase.table("contests").select(day_of_week).filter('week', 'eq', week_of_year)
+        result = await self.execute_supabase_query(query.execute)
+        return result.data[0][day_of_week] if result else None
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -39,8 +81,9 @@ class Contests(commands.Cog):
         channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID) 
         message = await channel.send(f"Image submission from <@{user_id}>:", embed=discord.Embed().set_image(url=image_url))
         await message.add_reaction("👍")
-        # Update the user's record in the "users" table in Supabase with the message ID
-        await self.bot.supabase.table('users').update({'message_id': message.id}).match({'u_id': user_id}).execute()
+        query = self.bot.supabase.table('users').update({'message_id': message.id}).match({'u_id': user_id})
+        await self.execute_supabase_query(query.execute)
+
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -55,7 +98,8 @@ class Contests(commands.Cog):
                 await message.author.send('Sorry, you took too long to reply.')
             else:
                 if reply.content.lower() == 'yes' and self.accepting_images:
-                    await self.bot.supabase.table('users').upsert({'u_id': message.author.id, 'submitted': int(datetime.now(timezone('UTC')).timestamp())}).execute()
+                    query = self.bot.supabase.table('users').upsert({'u_id': message.author.id, 'submitted': int(datetime.now(timezone('UTC')).timestamp())})
+                    await self.execute_supabase_query(query.execute)
                     await self.inspect_image(message.author.id, message.attachments[0].url)
                     await message.author.send('Your image has been submitted for manual inspection.')
                 elif reply.content.lower() == 'no':
@@ -84,7 +128,6 @@ class Contests(commands.Cog):
     async def count_votes(self):
         while True:
             now = datetime.now(timezone('UTC'))
-
             if now.hour == 22:
                 channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID)
                 vote_counts = {}
@@ -100,12 +143,14 @@ class Contests(commands.Cog):
                 await channel.send(f"The winners are: {', '.join(f'<@{winner}>' for winner in winners)}")
 
                 # Update XP and levels for winners
-                xp_awards = [100, 80, 60, 40, 20]  # XP for 1st to 5th places
                 for i, winner in enumerate(winners):
-                    user = await self.bot.supabase.table('users').select('u_id, xp, level').filter('u_id', 'eq', winner).single().execute()
-                    new_xp = user.data['xp'] + xp_awards[i]
-                    new_level = new_xp // 100  # each level requires 100 XP
-                    await self.bot.supabase.table('users').update({'xp': new_xp, 'level': new_level}).match({'u_id': winner}).execute()
+                    query = self.bot.supabase.table('users').select('u_id, xp, level').filter('u_id', 'eq', winner).single()
+                    user = await self.execute_supabase_query(query.execute)
+                    if user and user.data:
+                        new_xp = user.data['xp'] + XP_AWARDS[i]
+                        new_level = new_xp // 100  # each level requires 100 XP
+                        query = self.bot.supabase.table('users').update({'xp': new_xp, 'level': new_level}).match({'u_id': winner})
+                        await self.execute_supabase_query(query.execute)
             await asyncio.sleep(60)
 
 async def setup(bot):
