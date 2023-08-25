@@ -141,12 +141,20 @@ class Contests(commands.Cog):
             user_id = message.author.id
             query = self.bot.supabase.table('users').select('submitted').filter('u_id', 'eq', user_id).single()
             user_data = await self.execute_supabase_query(query.execute)
-            last_submission_time = user_data.data['submitted'] if user_data and user_data.data else None
-
+    
+            # Check if the user exists in the database
+            if not user_data or not user_data.data:
+                # Insert a new row for the user with default values
+                query = self.bot.supabase.table('users').insert({'u_id': user_id, 'submitted': 0})
+                await self.execute_supabase_query(query.execute)
+                last_submission_time = 0
+            else:
+                last_submission_time = user_data.data['submitted']
+    
             # Get the start time of the current contest
             now = datetime.now(timezone('US/Eastern'))
             current_contest_start_time = now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
-
+    
             # Check if the user has already submitted an image for the current contest
             if last_submission_time and last_submission_time >= current_contest_start_time:
                 await message.author.send('You have already submitted an image for the current contest. Only one submission is allowed.')
