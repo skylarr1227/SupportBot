@@ -48,7 +48,7 @@ class Contests(commands.Cog):
 
     @commands.command(aliases=['level'])
     async def xp(self, ctx):
-        user_id = str(ctx.author.id)
+        user_id = ctx.author.id
         query = self.bot.supabase.table('users').select('xp, level').filter('u_id', 'eq', user_id).single()
         user_data = await self.execute_supabase_query(query.execute)
 
@@ -119,13 +119,13 @@ class Contests(commands.Cog):
 
     async def inspect_image(self, user_id, image_url):
         channel = self.bot.get_channel(INSPECTION_CHANNEL_ID)  
-        message = await channel.send(embed=discord.Embed(description=f"New image submission from <@{user_id}> for inspection:").set_image(url=image_url))
+        message = await channel.send(embed=discord.Embed(description=f"{user_id}").set_image(url=image_url))
         await message.add_reaction("👍")
         await message.add_reaction("👎")
 
     async def post_image(self, user_id, image_url):
         channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID) 
-        message = await channel.send(embed=discord.Embed(description=f"Image submission from <@{user_id}>:").set_image(url=image_url))
+        message = await channel.send(f'<@{user_id}>',embed=discord.Embed(description=f"{user_id}").set_image(url=image_url))
         await message.add_reaction("👍")
         query = self.bot.supabase.table('users').update({'message_id': message.id}).match({'u_id': user_id})
         await self.execute_supabase_query(query.execute)
@@ -172,7 +172,7 @@ class Contests(commands.Cog):
             message = await channel.fetch_message(payload.message_id)
 
             if message.embeds and message.embeds[0].description:
-                user_id = message.embeds[0].description.split("<@")[1].split(">")[0]
+                user_id = int(message.embeds[0].description[0])
                 if str(payload.emoji) == "👍":
                     image_url = message.embeds[0].image.url
                     await self.post_image(user_id, image_url)
