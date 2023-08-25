@@ -25,6 +25,10 @@ class Contests(commands.Cog):
         self.bot.loop.create_task(self.check_time())
         self.bot.loop.create_task(self.count_votes())
 
+    def cog_unload(self):
+        if self.task is not None:
+            self.task.cancel()
+
     async def execute_supabase_query(self, func, *args, **kwargs):
         try:
             loop = asyncio.get_running_loop()

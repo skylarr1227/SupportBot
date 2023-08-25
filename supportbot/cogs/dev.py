@@ -46,6 +46,18 @@ class Dev(commands.Cog):
                 break
 
     @team()
+    @commands.command()
+    async def reload_all_cogs(self, ctx):
+        for cog_name, _ in self.bot.cogs.items():
+            try:
+                self.bot.reload_extension(f'cogs.{cog_name}')
+                await ctx.send(f'Cog {cog_name} has been reloaded.')
+            except Exception as e:
+                await ctx.send(f'Error reloading cog {cog_name}: {e}')           
+
+    
+
+    @team()
     @commands.command(name='eval')
     @commands.is_owner() 
     async def _eval(self, ctx, *, code):
@@ -71,10 +83,10 @@ class Dev(commands.Cog):
     @commands.command()
     async def cogs(self, ctx):
         """View the currently loaded cogs."""
-        cogs = sorted([x.replace("cogs.", "") for x in ctx.bot.extensions.keys()])
+        cogs = sorted([x.replace("supportbot.", f"{GREEN} - ") for x in ctx.bot.extensions.keys()])
         embed = discord.Embed(
             title=f"{len(cogs)} loaded:",
-            description=f" - {GREEN}\n".join(cogs),
+            description=f"\n".join(cogs),
             color=0xFF0060,
         )
         await ctx.send(embed=embed)
@@ -82,7 +94,7 @@ class Dev(commands.Cog):
 
     @team()
     @commands.command()
-    async def load_cog(self, ctx, cog_name: str):
+    async def load(self, ctx, cog_name: str):
         try:
             await self.bot.load_extension(f'supportbot.cogs.{cog_name}')
             await ctx.send(f'Cog {cog_name} has been loaded.')
@@ -92,7 +104,7 @@ class Dev(commands.Cog):
     
     @team()
     @commands.command()
-    async def unload_cog(self, ctx, cog_name: str):
+    async def unload(self, ctx, cog_name: str):
         try:
             await self.bot.unload_extension(f'supportbot.cogs.{cog_name}')
             await ctx.send(f'Cog {cog_name} has been unloaded.')
