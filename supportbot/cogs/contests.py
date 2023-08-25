@@ -134,6 +134,20 @@ class Contests(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         if isinstance(message.channel, discord.DMChannel) and len(message.attachments) > 0:
+            user_id = message.author.id
+            query = self.bot.supabase.table('users').select('submitted').filter('u_id', 'eq', user_id).single()
+            user_data = await self.execute_supabase_query(query.execute)
+            last_submission_time = user_data.data['submitted'] if user_data and user_data.data else None
+
+            # Get the start time of the current contest
+            now = datetime.now(timezone('US/Eastern'))
+            current_contest_start_time = now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+
+            # Check if the user has already submitted an image for the current contest
+            if last_submission_time and last_submission_time >= current_contest_start_time:
+                await message.author.send('You have already submitted an image for the current contest. Only one submission is allowed.')
+                return
+
             reply = await message.reply("Do you want to submit this image for the daily contest? (yes/no)")
             def check(m):
                 return m.author == message.author and m.channel == message.channel and m.content.lower() in ["yes", "no"]
