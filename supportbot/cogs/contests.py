@@ -9,7 +9,7 @@ from supportbot.core.utils import team
 import os
 import logging
 
-logger = logging.getLogger('discord')
+logger = logging.getLogger('diswcord')
 logger.setLevel(logging.ERROR)
 handler = logging.FileHandler(filename='errors.log', encoding='utf-8', mode='a')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s\n'))
@@ -167,9 +167,9 @@ class Contests(commands.Cog):
             current_contest_start_time = now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
 
             # Check if the user has already submitted an image for the current contest
-            query = self.bot.supabase.table('artwork').select('submitted').filter(
+            query = self.bot.supabase.table('artwork').select('submitted_on').filter(
                 ('u_id', 'eq', user_id),
-                ('submitted', 'gte', current_contest_start_time)
+                ('submitted_on', 'gte', current_contest_start_time)
             )
             artwork_data = await self.execute_supabase_query(query.execute)
 
@@ -180,7 +180,7 @@ class Contests(commands.Cog):
             # Insert a new artwork submission into the 'artwork' table
             artwork_data = {
                 'u_id': user_id,
-                'submitted': int(now.timestamp()),
+                'submitted_on': int(now.timestamp()),
                 'message_id': None,  # Will be updated later
                 'upvotes': 0,
                 'inspected_by': None  # Will be updated later
