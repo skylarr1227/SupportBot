@@ -160,17 +160,19 @@ class Contests(commands.Cog):
 
             # Insert a new user if not exists in 'users' table
             if not user_data or not user_data.data:
-                query = self.bot.supabase.table('users').insert({'u_id': user_id, 'xp': 0, 'level': 0})
+                query = self.bot.supabase.table('users').upsert({'u_id': user_id, 'xp': 0, 'level': 0})
                 await self.execute_supabase_query(query.execute)
 
                 now = datetime.now(timezone('US/Eastern'))
             current_contest_start_time = now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
 
             # Check if the user has already submitted an image for the current contest
-            query = self.bot.supabase.table('artwork').select('submitted_on').filter(
-                ('u_id', 'eq', user_id),
-                ('submitted_on', 'gte', current_contest_start_time)
-            )
+            query = (
+                self.bot.supabase.table('artwork')
+                .select('submitted')
+                .filter('u_id', 'eq', user_id)
+                .filter('submitted', 'gte', current_contest_start_time)
+)
             artwork_data = await self.execute_supabase_query(query.execute)
 
             if artwork_data and artwork_data.data:
