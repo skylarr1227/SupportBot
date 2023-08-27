@@ -177,6 +177,8 @@ class Contests(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
+        if payload.user_id == 1082909042944524308:
+            return
         if payload.channel_id == INSPECTION_CHANNEL_ID:
             channel = self.bot.get_channel(payload.channel_id)
             message = await channel.fetch_message(payload.message_id)
