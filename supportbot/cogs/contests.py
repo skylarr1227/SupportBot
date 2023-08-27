@@ -152,7 +152,7 @@ class Contests(commands.Cog):
                 now = datetime.now(timezone('US/Eastern'))
                 current_contest_start_time = now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
                 # Check if the user has already submitted an image for the current contest
-                row = await connection.fetchrow('SELECT submitted_by FROM artwork WHERE u_id = $1 AND submitted_on >= $2', user_id, current_contest_start_time)
+                row = await connection.fetchrow('SELECT submitted_by FROM artwork WHERE submitted_by = $1 AND submitted_on >= $2', user_id, current_contest_start_time)
                 if row:
                     await message.author.send('You have already submitted an image for the current contest. Only one submission is allowed.')
                     return
