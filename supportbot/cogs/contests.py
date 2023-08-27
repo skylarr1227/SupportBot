@@ -152,7 +152,7 @@ class Contests(commands.Cog):
                     await message.author.send('You have already submitted an image for the current contest. Only one submission is allowed.')
                     return
                 # Insert a new artwork submission
-                await connection.execute('INSERT INTO artwork(submitted_by, submitted_on, message_id, upvotes, inspected_by) VALUES($1, $2, $3, $4, $5)', user_id, int(now.timestamp()), None, 0, None)
+                
                 reply = await message.reply("Do you want to submit this image for the daily contest? (yes/no)")
                 def check(m):
                     return m.author == message.author and m.channel == message.channel and m.content.lower() in ["yes", "no"]
@@ -162,12 +162,13 @@ class Contests(commands.Cog):
                     await message.author.send('Sorry, you took too long to reply.')
                 else:
                     if reply.content.lower() == 'yes' and self.accepting_images:
-                        await connection.execute('INSERT INTO users(u_id, submitted) VALUES($1, $2) ON CONFLICT(u_id) DO UPDATE SET submitted = EXCLUDED.submitted', user_id, int(now.timestamp()))
-                        await self.inspect_image(message.author.id, message.attachments[0].url)
+                        await connection.execute('INSERT INTO artwork(submitted_by, submitted_on, message_id, upvotes, inspected_by) VALUES($1, $2, $3, $4, $5)', user_id, int(now.timestamp()), None, 0, None)
+                        await connection.execute('UPDATE users SET submitted = $1 WHERE u_id = $2', int(now.timestamp()), user_id)
+                        await self.inspect_image(user_id, message.attachments[0].url)
                         await message.author.send('Your image has been submitted for manual inspection.')
                     elif reply.content.lower() == 'no':
                         await message.author.send('Okay, your image was not submitted.')
-
+            
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -210,10 +211,11 @@ class Contests(commands.Cog):
         while True:
             now = datetime.now(timezone('US/Eastern'))
             if now.hour == 22:
+                current_contest_start_time = now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
                 channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID)
                 async with self.bot.pool.acquire() as connection:
                     # Fetch all artworks' user IDs and message IDs
-                    rows = await connection.fetch('SELECT u_id, message_id FROM artwork')
+                    rows = await connection.fetch('SELECT u_id, message_id FROM artwork WHERE submitted_on >= $1', current_contest_start_time)
                     for row in rows:
                         try:
                             message = await channel.fetch_message(row['message_id'])
