@@ -38,7 +38,8 @@ async def create_pool():
         user=os.environ.get("PGUSER"),
         password=os.environ.get("PGPASS"),
         database=os.environ.get("PGDB"),
-        host=os.environ.get("PGHOST")
+        host=os.environ.get("PGHOST"),
+        port=os.environ.get("PGPORT")
     )
 
 class SupportBot(commands.AutoShardedBot):
