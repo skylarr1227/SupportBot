@@ -181,7 +181,7 @@ class Contests(commands.Cog):
 
             # Insert a new artwork submission into the 'artwork' table
             artwork_data = {
-                'u_id': user_id,
+                'submitted_by': user_id,
                 'submitted_on': int(now.timestamp()),
                 'message_id': None,  # Will be updated later
                 'upvotes': 0,
