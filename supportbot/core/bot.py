@@ -9,12 +9,10 @@ import logging
 import openai
 from notion_client import AsyncClient
 from supportbot.core.utils import team
+import asyncpg
 load_dotenv()
 
 TOKEN = os.environ.get("TOKEN") # this is the bot token
-
-
-
 intents = discord.Intents.default()
 intents.messages = True
 intents.reactions = True
@@ -35,6 +33,14 @@ class ErrorHandlingTree(app_commands.CommandTree):
             return
         await super().on_error(interaction, error)
 
+async def create_pool():
+    return await asyncpg.create_pool(
+        user=os.environ.get("PGUSER"),
+        password=os.environ.get("PGPASS"),
+        database=os.environ.get("PGDB"),
+        host=os.environ.get("PGHOST")
+    )
+
 class SupportBot(commands.AutoShardedBot):
     def __init__(self, *args, **kwargs):
         super().__init__(
@@ -48,6 +54,8 @@ class SupportBot(commands.AutoShardedBot):
             *args,
             **kwargs,
         )
+        self.pool = None 
+        pool = self.pool
         SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY")
         self.SUPABASE_API_KEY = SUPABASE_API_KEY
         self.WOMBO_TEAM = [
@@ -107,7 +115,8 @@ class SupportBot(commands.AutoShardedBot):
         return self.notion_client
 
 
-
+    async def _setup_hook(self):
+        self.db = await create_pool()
         
 
     async def analyze_sentiment_and_participation(self, thread_id):
@@ -182,6 +191,11 @@ class SupportBot(commands.AutoShardedBot):
         await super().on_error(ctx, error)
     
     async def start(self, *args, **kwargs):
+        try:
+            self.pool = await create_pool()
+            self.logger.info(f'Postgres Database has been Initialized.')
+        except:
+            self.logger.info("Postgres Database has FAILED to Initialize.")
         for cogname in ("events", "dev", "tickets", "metrics", "zendesk"):
             await self.load_extension(f"supportbot.cogs.{cogname}")
         await super().start(*args, **kwargs)
