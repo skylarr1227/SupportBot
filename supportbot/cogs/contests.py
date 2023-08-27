@@ -95,7 +95,8 @@ class Contests(commands.Cog):
         week_of_year = now.isocalendar()[1]
         day_of_week = calendar.day_name[now.weekday()].lower()
         async with self.bot.pool.acquire() as connection:
-            row = await connection.fetchrow('SELECT $1 FROM contests WHERE week = $2', day_of_week, week_of_year)
+            query = f'SELECT {day_of_week} FROM contests WHERE week = $1'
+            row = await connection.fetchrow(query, week_of_year)
             return row[day_of_week] if row else None
 
     async def initialize_contest(self):
