@@ -33,14 +33,7 @@ class ErrorHandlingTree(app_commands.CommandTree):
             return
         await super().on_error(interaction, error)
 
-async def create_pool():
-    return await asyncpg.create_pool(
-        user=os.environ.get("PGUSER"),
-        password=os.environ.get("PGPASS"),
-        database=os.environ.get("PGDB"),
-        host=os.environ.get("PGHOST"),
-        port=os.environ.get("PGPORT")
-    )
+
 
 class SupportBot(commands.AutoShardedBot):
     def __init__(self, *args, **kwargs):
@@ -107,6 +100,15 @@ class SupportBot(commands.AutoShardedBot):
         self.domain = FRESHDESK_DOMAIN
         self.api_url = f"https://{self.domain}.freshdesk.com/api/v2/"
 
+    async def create_pool(self):
+        return await asyncpg.create_pool(
+            user=os.environ.get("PGUSER"),
+            password=os.environ.get("PGPASS"),
+            database=os.environ.get("PGDB"),
+            host=os.environ.get("PGHOST")
+            #port=os.environ.get("PGPORT")
+        )
+
     async def create_notion_client(self):
         try:
             self.notion_client = AsyncClient(auth=self.NOTION_TOKEN)
@@ -117,7 +119,7 @@ class SupportBot(commands.AutoShardedBot):
 
 
     async def _setup_hook(self):
-        self.db = await create_pool()
+        self.db = await self.create_pool()
         
 
     async def analyze_sentiment_and_participation(self, thread_id):
@@ -193,9 +195,11 @@ class SupportBot(commands.AutoShardedBot):
     
     async def start(self, *args, **kwargs):
         try:
-            self.pool = await create_pool()
+            self.pool = await self.create_pool()
             self.logger.info(f'Postgres Database has been Initialized.')
+            print(f'Postgres Database has been Initialized.')
         except:
+            print(f'Postgres Database has FAILED to Initialize.')
             self.logger.info("Postgres Database has FAILED to Initialize.")
         for cogname in ("events", "dev", "tickets", "metrics", "zendesk"):
             await self.load_extension(f"supportbot.cogs.{cogname}")

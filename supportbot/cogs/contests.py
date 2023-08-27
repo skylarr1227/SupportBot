@@ -99,11 +99,15 @@ class Contests(commands.Cog):
             return row[day_of_week] if row else None
 
     async def initialize_contest(self):
-        theme_channel = self.bot.get_channel(THEME_CHANNEL_ID)
-        theme = await self.get_theme()
-        await theme_channel.send(f"Today's theme is:\n{theme}")
-        self.phase_message = await theme_channel.send("Initializing contest phase...")
-        await self.update_phase()
+        try:
+            theme_channel = self.bot.get_channel(THEME_CHANNEL_ID)
+            theme = await self.get_theme()
+            await theme_channel.send(f"Today's theme is:\n{theme}")
+            self.phase_message = await theme_channel.send("Initializing contest phase...")
+            await self.update_phase()
+            print("Contest initialized")  # Debugging print statement
+        except Exception as e:
+            print(f"Failed to initialize contest: {e}")  # Debugging print statement
 
     async def update_phase(self):
         now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
