@@ -83,7 +83,7 @@ class Contests(commands.Cog):
         await ctx.send(f"Time offset has been set to {offset} hours, and the phase has been updated.")
 
     @commands.group()
-    async def shop(ctx):
+    async def shop(self, ctx):
         if ctx.invoked_subcommand is None:
             embed = discord.Embed(title="🛒 Shop", description="Please select the platform you signed up on and use:", color=0x00ff00)  # Random color
             embed.add_field(name="1. Android", value="`shop android`", inline=False)
@@ -92,17 +92,17 @@ class Contests(commands.Cog):
             await ctx.send(embed=embed)
 
     @shop.command(name='android')
-    async def shop_android(ctx):
+    async def shop_android(self, ctx):
         await ctx.send(embed=discord.Embed(title="Coming soon", description="Coupon codes for free subscriptions!"))
         pass
 
     @shop.command(name='ios')
-    async def shop_ios(ctx):
+    async def shop_ios(self, ctx):
         await ctx.send(embed=discord.Embed(title="Coming soon", description="Coupon codes for free subscriptions!"))
         pass
 
     @shop.command(name='web')
-    async def shop_web(ctx):
+    async def shop_web(self, ctx):
         await ctx.send(embed=discord.Embed(title="Coming soon", description="Coupon codes for free subscriptions!"))
         pass
 
