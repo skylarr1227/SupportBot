@@ -9,6 +9,7 @@ from supportbot.core.utils import team
 import os
 import logging
 import asyncpg
+import random
 
 logger = logging.getLogger('discord')
 logger.setLevel(logging.ERROR)
@@ -24,6 +25,20 @@ XP_AWARDS = [100, 80, 60, 40, 20] # XP for 1st to 5th places
 STRIPE_AUTH = os.environ.get("STRIPE_AUTH")
 if STRIPE_AUTH is None:
     logger.error("The STRIPE_AUTH environment variable is missing!\nStripe coupon codes will not be generated until this is corrected in the .env file!")
+
+
+def generate_progress_bar(percentage):
+    filled_emoji = "<:xxp2:1145574506421833769>"
+    last_filled_emoji = "<:xxp:1145574909632839720>"
+    total_slots = 10
+    filled_slots = percentage // 10  # Since each slot is 10%
+    if filled_slots == 10:
+        progress_bar = filled_emoji * 9 + last_filled_emoji
+    elif filled_slots > 0:
+        progress_bar = filled_emoji * (filled_slots - 1) + last_filled_emoji + "╍" * (total_slots - filled_slots)
+    else:
+        progress_bar = "╍" * total_slots
+    return f"{progress_bar} {percentage}%"
 
 
 class Contests(commands.Cog):
@@ -43,6 +58,10 @@ class Contests(commands.Cog):
         for task in self.tasks:
             task.cancel()
    
+    
+
+
+
     @team()
     @commands.command(name='setdebug')
     async def set_debug(self, ctx, debug: bool):
@@ -62,7 +81,7 @@ class Contests(commands.Cog):
         user_id = ctx.author.id
         async with self.bot.pool.acquire() as connection:
             row = await connection.fetchrow('SELECT xp, level FROM users WHERE u_id = $1', user_id)
-            
+
             if row:
                 xp = row['xp']
                 level = row['level']
@@ -71,24 +90,17 @@ class Contests(commands.Cog):
                 else:
                     xp_next_level = 100 * (level + 1)
                     percentage = (xp - (100 * level)) * 10 // (xp_next_level - (100 * level))
-                    progress_bar = {
-                        0: "╍╍╍╍╍╍╍╍╍╍ 0%",
-                        10: "<:10:1139230034217947237> ▰╍╍╍╍╍╍╍╍╍ 10%",
-                        20: "<:20:1139230035711119411> ▰▰╍╍╍╍╍╍╍╍ 20%",
-                        30: "<:30:1139230037405610205> ▰▰▰╍╍╍╍╍╍╍ 30%",
-                        40: "<:40:1139230021307863140> ▰▰▰▰╍╍╍╍╍╍ 40%",
-                        50: "<:50:1139230023673462845> ▰▰▰▰▰╍╍╍╍╍ 50%",
-                        60: "<:60:1139230026030649374> ▰▰▰▰▰▰╍╍╍╍ 60%",
-                        70: "<:70:1139230027767099412> ▰▰▰▰▰▰▰╍╍╍ 70%",
-                        80: "<:80:1139230029528715364> ▰▰▰▰▰▰▰▰╍╍ 80%",
-                        90: "<:90:1139230030757626016> ▰▰▰▰▰▰▰▰▰╍ 90%",
-                        100: "<:100:1139230032968040479> ▰▰▰▰▰▰▰▰▰▰ 100%",
-                    }
-                    await ctx.send(f"Current Level: {level}\n{progress_bar[percentage]}")
+
+                progress_bar_str = generate_progress_bar(percentage)
+                embed = discord.Embed(
+                    title=f"XP and Level Info for {ctx.author.name}",
+                    description=f"Current Level: {level}\n{progress_bar_str}",
+                    color=random.randint(0, 0xFFFFFF)  # Random color
+                )
+                await ctx.send(embed=embed)
             else:
                 await connection.execute('INSERT INTO users(u_id, xp, level) VALUES($1, $2, $3)', user_id, 0, 0)
                 await ctx.send("Welcome! You have been added to the system. You are at level 0 with 0 XP.")
-
 
 
     async def get_theme(self):
@@ -203,17 +215,22 @@ class Contests(commands.Cog):
         last_phase = None
         while True:
             now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
-            if now.hour < 21:
+            if 0 <= now.hour < 20:
                 phase = "In Progress"
-            elif now.hour == 21:
+                self.accepting_images = True
+            elif now.hour == 20:
                 phase = "Voting"
-            else:
+                self.accepting_images = False
+            else:  # 21 to 23
                 phase = "Downtime"
+                self.accepting_images = False
+                
             if phase != last_phase:
                 await self.update_phase()
                 last_phase = phase
+                
             await asyncio.sleep(60)
-
+    
 
     async def count_votes(self):
         while True:
