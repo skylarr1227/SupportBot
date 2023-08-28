@@ -41,6 +41,7 @@ def generate_progress_bar(percentage):
     return f"{progress_bar} {percentage}%"
 
 
+
 class Contests(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -59,7 +60,12 @@ class Contests(commands.Cog):
             task.cancel()
    
     
-
+    async def purchase_coupon(self, connection, platform):
+        coupon = await connection.fetchrow('SELECT * FROM coupons WHERE platform = $1 AND purchased IS NULL LIMIT 1', platform)
+        if coupon:
+            await connection.execute('UPDATE coupons SET purchased = NOW() WHERE id = $1', coupon['id'])
+            return coupon['code']
+        return None
 
 
     @team()
@@ -75,6 +81,31 @@ class Contests(commands.Cog):
         self.time_offset = offset
         await self.update_phase()  
         await ctx.send(f"Time offset has been set to {offset} hours, and the phase has been updated.")
+
+    @commands.group()
+    async def shop(ctx):
+        if ctx.invoked_subcommand is None:
+            embed = discord.Embed(title="🛒 Shop", description="Please select the platform you signed up on and use:", color=0x00ff00)  # Random color
+            embed.add_field(name="1. Android", value="`shop android`", inline=False)
+            embed.add_field(name="2. iOS", value="`shop ios`", inline=False)
+            embed.add_field(name="3. Web", value="`shop web`", inline=False)
+            await ctx.send(embed=embed)
+
+    @shop.command(name='android')
+    async def shop_android(ctx):
+        await ctx.send(embed=discord.Embed(title="Coming soon", description="Coupon codes for free subscriptions!"))
+        pass
+
+    @shop.command(name='ios')
+    async def shop_ios(ctx):
+        await ctx.send(embed=discord.Embed(title="Coming soon", description="Coupon codes for free subscriptions!"))
+        pass
+
+    @shop.command(name='web')
+    async def shop_web(ctx):
+        await ctx.send(embed=discord.Embed(title="Coming soon", description="Coupon codes for free subscriptions!"))
+        pass
+
 
     @commands.command(aliases=['level'])
     async def xp(self, ctx):
@@ -216,21 +247,21 @@ class Contests(commands.Cog):
         while True:
             now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
             if 0 <= now.hour < 20:
-                phase = "In Progress"
+                phase = "In Progress (12:00am - 8pm EST)"
                 self.accepting_images = True
             elif now.hour == 20:
-                phase = "Voting"
+                phase = "Voting (8pm - 9pm EST)"
                 self.accepting_images = False
             else:  # 21 to 23
-                phase = "Downtime"
+                phase = "Downtime (9:00pm - 12:00am)"
                 self.accepting_images = False
-                
+
             if phase != last_phase:
                 await self.update_phase()
                 last_phase = phase
-                
+
             await asyncio.sleep(60)
-    
+
 
     async def count_votes(self):
         while True:
@@ -260,7 +291,7 @@ class Contests(commands.Cog):
                                 if user:
                                     new_xp = user['xp'] + XP_AWARDS[i]
                                     new_level = new_xp // 100  # each level requires 100 XP
-                                    await connection.execute('UPDATE users SET xp = $1, level = $2 WHERE u_id = $3', new_xp, new_level, winner)
+                                    await connection.execute('UPDATE users SET xp = $1, level = $2, tokens = tokens + 1 WHERE u_id = $3', new_xp, new_level, winner)
                                 else:
                                     print(f"No user found for u_id: {winner}")
 
