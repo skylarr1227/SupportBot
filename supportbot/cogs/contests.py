@@ -137,7 +137,7 @@ class Contests(commands.Cog):
         message = await channel.send(f'<@{user_id}>', embed=discord.Embed(description=f"{user_id}").set_image(url=image_url))
         await message.add_reaction("👍")
         async with self.bot.pool.acquire() as connection:
-            await connection.execute('UPDATE artwork SET message_id = $1 WHERE u_id = $2', message.id, user_id)
+            await connection.execute('UPDATE artwork SET message_id = $1 WHERE submitted_by = $2', message.id, user_id)
 
 
 
