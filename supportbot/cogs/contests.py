@@ -37,6 +37,7 @@ class Contests(commands.Cog):
         self.tasks.append(self.bot.loop.create_task(self.initialize_contest()))
         self.tasks.append(self.bot.loop.create_task(self.check_time()))
         self.tasks.append(self.bot.loop.create_task(self.count_votes()))
+        self.last_winner_announcement_date = None
 
     def cog_unload(self):
         for task in self.tasks:
@@ -217,35 +218,38 @@ class Contests(commands.Cog):
     async def count_votes(self):
         while True:
             now = datetime.now(timezone('US/Eastern'))
+            current_date = now.date()
             if now.hour == 22:
-                current_contest_start_time = now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
-                channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID)
-                async with self.bot.pool.acquire() as connection:
-                    # Fetch all artworks' user IDs and message IDs
-                    rows = await connection.fetch('SELECT u_id, message_id FROM artwork WHERE submitted_on >= $1', current_contest_start_time)
-                    for row in rows:
-                        try:
-                            message = await channel.fetch_message(row['message_id'])
-                            for reaction in message.reactions:
-                                if str(reaction.emoji) == "👍":
-                                    # Update the 'upvotes' 
-                                    await connection.execute('UPDATE artwork SET upvotes = $1 WHERE u_id = $2 AND message_id = $3', reaction.count, row['u_id'], row['message_id'])
-                        except Exception as e:
-                            print(f"Failed to fetch or process message: {e}")
-                    # Fetch top 5 artworks by upvotes
-                    top_artworks = await connection.fetch('SELECT u_id, upvotes FROM artwork ORDER BY upvotes DESC LIMIT 5')
+                if self.last_winner_announcement_date != current_date:
 
-                    if top_artworks:
-                        winners = [artwork['u_id'] for artwork in top_artworks]
-                        await channel.send(f"The winners are: {', '.join(f'<@{winner}>' for winner in winners)}")
-                        # Update XP and levels for winners
-                        for i, winner in enumerate(winners):
-                            user = await connection.fetchrow('SELECT u_id, xp, level FROM users WHERE u_id = $1', winner)
-                            if user:
-                                new_xp = user['xp'] + XP_AWARDS[i]
-                                new_level = new_xp // 100  # each level requires 100 XP
-                                await connection.execute('UPDATE users SET xp = $1, level = $2 WHERE u_id = $3', new_xp, new_level, winner)
+                    current_contest_start_time = now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+                    channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID)
+                    async with self.bot.pool.acquire() as connection:
+                        # Fetch all artworks' user IDs and message IDs
+                        rows = await connection.fetch('SELECT u_id, message_id FROM artwork WHERE submitted_on >= $1', current_contest_start_time)
+                        for row in rows:
+                            try:
+                                message = await channel.fetch_message(row['message_id'])
+                                for reaction in message.reactions:
+                                    if str(reaction.emoji) == "👍":
+                                        # Update the 'upvotes' 
+                                        await connection.execute('UPDATE artwork SET upvotes = $1 WHERE u_id = $2 AND message_id = $3', reaction.count, row['u_id'], row['message_id'])
+                            except Exception as e:
+                                print(f"Failed to fetch or process message: {e}")
+                        # Fetch top 5 artworks by upvotes
+                        top_artworks = await connection.fetch('SELECT u_id, upvotes FROM artwork ORDER BY upvotes DESC LIMIT 5')
 
+                        if top_artworks:
+                            winners = [artwork['u_id'] for artwork in top_artworks]
+                            await channel.send(f"The winners are: {', '.join(f'<@{winner}>' for winner in winners)}")
+                            # Update XP and levels for winners
+                            for i, winner in enumerate(winners):
+                                user = await connection.fetchrow('SELECT u_id, xp, level FROM users WHERE u_id = $1', winner)
+                                if user:
+                                    new_xp = user['xp'] + XP_AWARDS[i]
+                                    new_level = new_xp // 100  # each level requires 100 XP
+                                    await connection.execute('UPDATE users SET xp = $1, level = $2 WHERE u_id = $3', new_xp, new_level, winner)
+                    self.last_winner_announcement_date = current_date
             await asyncio.sleep(60)
 
 
