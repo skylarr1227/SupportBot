@@ -21,7 +21,7 @@ LOGGING_CHANNEL_ID = 1145417494182494359
 THEME_CHANNEL_ID = 1144325882257887312
 INSPECTION_CHANNEL_ID = 1144006598709219429
 PUBLIC_VOTING_CHANNEL_ID = 1144006673829199942
-XP_AWARDS = [100, 80, 60, 40, 20] # XP for 1st to 5th places
+XP_AWARDS = [50, 40, 30, 20, 10] # XP for 1st to 5th places
 STRIPE_AUTH = os.environ.get("STRIPE_AUTH")
 if STRIPE_AUTH is None:
     logger.error("The STRIPE_AUTH environment variable is missing!\nStripe coupon codes will not be generated until this is corrected in the .env file!")
@@ -49,7 +49,7 @@ class Contests(commands.Cog):
         self.time_offset = 0
         self.accepting_images = True
         self.phase_message = None
-        self.tasks = []  # To keep track of all tasks
+        self.tasks = []  
         self.tasks.append(self.bot.loop.create_task(self.initialize_contest()))
         self.tasks.append(self.bot.loop.create_task(self.check_time()))
         self.tasks.append(self.bot.loop.create_task(self.count_votes()))
@@ -85,7 +85,7 @@ class Contests(commands.Cog):
     @commands.group()
     async def shop(self, ctx):
         if ctx.invoked_subcommand is None:
-            embed = discord.Embed(title="🛒 Shop", description="Please select the platform you signed up on and use:", color=0x00ff00)  # Random color
+            embed = discord.Embed(title="🛒 Shop", description="Please select the platform you signed up on and use:", color=0x00ff00)  
             embed.add_field(name="1. Android", value="`shop android`", inline=False)
             embed.add_field(name="2. iOS", value="`shop ios`", inline=False)
             embed.add_field(name="3. Web", value="`shop web`", inline=False)
@@ -126,7 +126,7 @@ class Contests(commands.Cog):
                 embed = discord.Embed(
                     title=f"XP and Level Info for {ctx.author.name}",
                     description=f"Current Level: {level}\n{progress_bar_str}",
-                    color=random.randint(0, 0xFFFFFF)  # Random color
+                    color=random.randint(0, 0xFFFFFF)  
                 )
                 await ctx.send(embed=embed)
             else:
@@ -147,26 +147,27 @@ class Contests(commands.Cog):
         try:
             theme_channel = self.bot.get_channel(THEME_CHANNEL_ID)
             theme = await self.get_theme()
-            await theme_channel.send(f"Today's theme is:\n{theme}")
+            embed = discord.Embed(title="Today's theme is", description=theme, color=random.randint(0, 0xFFFFFF))
+            await theme_channel.send(embed=embed)
             self.phase_message = await theme_channel.send("Initializing contest phase...")
             await self.update_phase()
-            print("Contest initialized")  # Debugging print statement
+            print("Contest initialized")  
         except Exception as e:
-            print(f"Failed to initialize contest: {e}")  # Debugging print statement
+            print(f"Failed to initialize contest: {e}")  
 
     async def update_phase(self):
         now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
         if now.hour < 21:
-            phase = "In Progress"
+            phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"
             self.accepting_images = True
         elif now.hour == 21:
-            phase = "Voting"
+            phase = "<:vote:1146208634322296923>"
             self.accepting_images = False
         else:
-            phase = "Downtime"
+            phase = "<:down3:1146208635953873016><:down2:1146208638843748372>"
             self.accepting_images = False
         if self.phase_message:
-            await self.phase_message.edit(content=f"The contest is now in the {phase} phase.")
+            await self.phase_message.edit(content=f"{phase}")
 
 
     async def inspect_image(self, user_id, image_url):
@@ -285,7 +286,11 @@ class Contests(commands.Cog):
                         top_artworks = await connection.fetch('SELECT u_id, upvotes FROM artwork ORDER BY upvotes DESC LIMIT 5')
                         if top_artworks:
                             winners = [artwork['u_id'] for artwork in top_artworks]
-                            await channel.send(f"The winners are: {', '.join(f'<@{winner}>' for winner in winners)}")
+                            embed = discord.Embed(
+                                title=f"Daily Contest Announcement",
+                                description=f"The winners of today's contest are:\n{', '.join(f'<@{winner}>' for winner in winners)}",
+                                color=random.randint(0, 0xFFFFFF))
+                            await channel.send(embed=embed)
                             for i, winner in enumerate(winners):
                                 user = await connection.fetchrow('SELECT u_id, xp, level FROM users WHERE u_id = $1', winner)
                                 if user:
