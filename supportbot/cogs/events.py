@@ -48,7 +48,7 @@ class Events(commands.Cog):
         if not added:
             return
         if "RESOLVED" in added:
-            new_name = re.sub(r'^\[[^\]]*\]', '[RESOLVED]', after.name)
+            new_name = re.sub(r'^\[[^\]]*\]', '[✔️]', after.name)
                 # Ensure the name does not exceed the Discord limit of 100 characters
             if len(new_name) > 100:
                 new_name = new_name[:100]
@@ -61,8 +61,15 @@ class Events(commands.Cog):
                 new_name = new_name[:100]
             await after.edit(name=new_name, reason="Thread marked as a known issue")
             return
+        if "WAITING" in added:
+            new_name = re.sub(r'^\[[^\]]*\]', '[🕙]', after.name)
+                # Ensure the name does not exceed the Discord limit of 100 characters
+            if len(new_name) > 100:
+                new_name = new_name[:100]
+            await after.edit(name=new_name, reason="Thread marked as waiting")
+            return
         if "CLOSED" in added:
-            new_name = re.sub(r'^\[[^\]]*\]', '[CLOSED]', after.name)
+            new_name = re.sub(r'^\[[^\]]*\]', '[❌]', after.name)
                 # Ensure the name does not exceed the Discord limit of 100 characters
             if len(new_name) > 100:
                 new_name = new_name[:100]
@@ -145,9 +152,11 @@ class Events(commands.Cog):
     
             # Determine the platform based on tags in the original_message
             platform = 0  # Default platform
-            if "dream" in original_message:
+            if "dream" in original_message_content:
                 platform = 1
-            elif "wombot" in original_message:
+            elif "wombot" in original_message_content:# The above code is assigning the value 2 to the
+            # variable "platform".
+            
                 platform = 2
             if original_message_object and original_message_content:
                 # Prepare the data for insertion
@@ -157,7 +166,7 @@ class Events(commands.Cog):
                     'thread_jump_url': thread.jump_url,
                     'support_rep': None,  # No support representative assigned at the time of creation
                     'author_id': int(author.id) if author else None,
-                    'original_message': original_message,
+                    'original_message': original_message_content,
                     # New fields
                     'platform': platform,
                     't_id': int(thread.id),
