@@ -176,7 +176,7 @@ class Events(commands.Cog):
                 response = self.bot.supabase.table("tickets").insert(payload).execute()
                 await thread.send(
                     content="Thank you for creating a thread. Our support team will be with you shortly.",
-                    reference=discord.MessageReference(message_id=original_message_object.id)
+                    reference=discord.MessageReference(message_id=original_message_object.id, channel_id=original_message_object.channel.id)
                 )   
 
        
