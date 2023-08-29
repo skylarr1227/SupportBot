@@ -169,12 +169,7 @@ class Events(commands.Cog):
             response = self.bot.supabase.table("tickets").insert(payload).execute()
             if original_message:
                 await thread.send(
-                    content="""
-                    #Please ensure you have included the following information, if applicable to your request:\n
-                    - Dream Account name
-                    - Screenshots of the issue you are having
-                    - 
-                    """,
+                    content="# Please ensure you have included the following information, if applicable to your request:\n- Dream Account name\n- Screenshots of the issue you are having\n",
                     reference=discord.MessageReference(message_id=original_message.id)
                 )
 
