@@ -52,7 +52,7 @@ class Events(commands.Cog):
                 # Ensure the name does not exceed the Discord limit of 100 characters
             if len(new_name) > 100:
                 new_name = new_name[:100]
-            await after.edit(name=new_name, archived=True, locked=True, reason="Thread resolved or closed.")
+            await after.edit(name=new_name, archived=False, locked=True, reason="Thread resolved or closed.")
             return
         if "KNOWN" in added:
             new_name = re.sub(r'^\[[^\]]*\]', '[KNOWN]', after.name)
@@ -66,7 +66,7 @@ class Events(commands.Cog):
                 # Ensure the name does not exceed the Discord limit of 100 characters
             if len(new_name) > 100:
                 new_name = new_name[:100]
-            await after.edit(name=new_name, archived=True, locked=True, reason="Thread resolved or closed.")
+            await after.edit(name=new_name, archived=False, locked=True, reason="Thread resolved or closed.")
             return
     
         if 'LOG' in added:
@@ -135,7 +135,7 @@ class Events(commands.Cog):
     
             # Automatically join the thread
             await thread.join()
-    
+
             # Log the thread creation in Supabase
             original_message = None  # Initialize to None, will be updated later
             author = None  # Initialize to None, will be updated later
@@ -167,6 +167,19 @@ class Events(commands.Cog):
             }
             # Insert the data into the Supabase "tickets" table
             response = self.bot.supabase.table("tickets").insert(payload).execute()
+            if original_message:
+                await thread.send(
+                    content="""
+                    #Please ensure you have included the following information, if applicable to your request:\n
+                    - Dream Account name
+                    - Screenshots of the issue you are having
+                    - 
+                    """",
+                    reference=discord.MessageReference(message_id=original_message.id)
+                )
+
+       
+            
             return response
     
         except Exception as e:
