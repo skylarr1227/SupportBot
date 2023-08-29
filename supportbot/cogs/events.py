@@ -175,7 +175,7 @@ class Events(commands.Cog):
                 # Insert the data into the Supabase "tickets" table
                 response = self.bot.supabase.table("tickets").insert(payload).execute()
                 await thread.send(
-                    content="Thank you for creating a thread. Our support team will be with you shortly.",
+                    content="Our support team will be with you shortly. Please ensure you have included the following with this request\n- Dream Account Name\n- Web/iOS/Android?\n- Device/Software Version\n- Screenshot(s) of the issue\n*Some of these may not be needed for every request*",
                     reference=discord.MessageReference(message_id=original_message_object.id, channel_id=original_message_object.channel.id)
                 )   
 
