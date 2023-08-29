@@ -143,7 +143,7 @@ class Events(commands.Cog):
             # Fetch the first message in the thread to get the original author and message
             async for message in thread.history(oldest_first=True, limit=1):
                 author = message.author
-                original_message = message.content
+                original_message = message
     
             # Determine the platform based on tags in the original_message
             platform = 0  # Default platform
