@@ -174,7 +174,7 @@ class Events(commands.Cog):
                     - Dream Account name
                     - Screenshots of the issue you are having
                     - 
-                    """",
+                    """,
                     reference=discord.MessageReference(message_id=original_message.id)
                 )
 
