@@ -132,18 +132,16 @@ class Events(commands.Cog):
                 if len(new_name) > 100:
                     new_name = new_name[:100]
                 await thread.edit(name=new_name)
-    
-            # Automatically join the thread
             await thread.join()
-
-            # Log the thread creation in Supabase
-            original_message = None  # Initialize to None, will be updated later
-            author = None  # Initialize to None, will be updated later
+            original_message_object = None
+            original_message_content = None 
+            author = None  
     
             # Fetch the first message in the thread to get the original author and message
             async for message in thread.history(oldest_first=True, limit=1):
                 author = message.author
-                original_message = message
+                original_message_object = message
+                original_message_content = message.content
     
             # Determine the platform based on tags in the original_message
             platform = 0  # Default platform
@@ -151,27 +149,26 @@ class Events(commands.Cog):
                 platform = 1
             elif "wombot" in original_message:
                 platform = 2
-    
-            # Prepare the data for insertion
-            payload = {
-                'old_status': 'NEW',  # Since the thread is new, the old_status is 'NEW'
-                'new_status': 'NEW',  # The new_status is also 'NEW' at the time of creation
-                'thread_jump_url': thread.jump_url,
-                'support_rep': None,  # No support representative assigned at the time of creation
-                'author_id': int(author.id) if author else None,
-                'original_message': original_message,
-                # New fields
-                'platform': platform,
-                't_id': int(thread.id),
-                'msg_count': thread.message_count  # Or use 'thread.total_message_sent' depending on your requirement
-            }
-            # Insert the data into the Supabase "tickets" table
-            response = self.bot.supabase.table("tickets").insert(payload).execute()
-            if original_message:
+            if original_message_object and original_message_content:
+                # Prepare the data for insertion
+                payload = {
+                    'old_status': 'NEW',  # Since the thread is new, the old_status is 'NEW'
+                    'new_status': 'NEW',  # The new_status is also 'NEW' at the time of creation
+                    'thread_jump_url': thread.jump_url,
+                    'support_rep': None,  # No support representative assigned at the time of creation
+                    'author_id': int(author.id) if author else None,
+                    'original_message': original_message,
+                    # New fields
+                    'platform': platform,
+                    't_id': int(thread.id),
+                    'msg_count': thread.message_count  # Or use 'thread.total_message_sent' depending on your requirement
+                }
+                # Insert the data into the Supabase "tickets" table
+                response = self.bot.supabase.table("tickets").insert(payload).execute()
                 await thread.send(
-                    content="# Please ensure you have included the following information, if applicable to your request:\n- Dream Account name\n- Screenshots of the issue you are having\n",
-                    reference=discord.MessageReference(message_id=original_message.id)
-                )
+                    content="Thank you for creating a thread. Our support team will be with you shortly.",
+                    reference=discord.MessageReference(message_id=original_message_object.id)
+                )   
 
        
             
