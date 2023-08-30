@@ -107,6 +107,36 @@ class Contests(commands.Cog):
         pass
 
 
+
+
+    @commands.command(name='cinfo')
+    async def contest_stats(self, ctx):
+        now = datetime.now(timezone('US/Eastern'))
+        epoch_now = int(time.mktime(now.timetuple()))
+        # Calculate the end time for each phase
+        end_in_progress = datetime(now.year, now.month, now.day, 20, 0, tzinfo=timezone('US/Eastern'))
+        end_voting = datetime(now.year, now.month, now.day, 21, 0, tzinfo=timezone('US/Eastern'))
+        end_downtime = datetime(now.year, now.month, now.day, 23, 59, 59, tzinfo=timezone('US/Eastern')) + timedelta(seconds=1)
+        # Convert to epoch
+        epoch_end_in_progress = int(time.mktime(end_in_progress.timetuple()))
+        epoch_end_voting = int(time.mktime(end_voting.timetuple()))
+        epoch_end_downtime = int(time.mktime(end_downtime.timetuple()))
+        # Determine the current phase
+        current_phase = None
+        if 0 <= now.hour < 20:
+            current_phase = f"In Progress (Ends in <t:{int(epoch_end_in_progress)}:R>)"
+        elif now.hour == 20:
+            current_phase = f"Voting (Ends in <t:{int(epoch_end_voting)}:R>)"
+        else:
+            current_phase = f"Downtime (Ends in <t:{int(epoch_end_downtime)}:R>)"
+        embed = discord.Embed(
+            title=f"Contest Stats",
+            description=f"Current Phase: {current_phase}\nEnd of In-Progress Phase: {epoch_end_in_progress}\nEnd of Voting Phase: {epoch_end_voting}\nEnd of Downtime: {epoch_end_downtime}",
+            color=random.randint(0, 0xFFFFFF)
+        )
+        await ctx.send(embed=embed)
+
+
     @commands.command(aliases=['level'])
     async def xp(self, ctx):
         user_id = ctx.author.id
@@ -242,6 +272,10 @@ class Contests(commands.Cog):
                         await connection.execute('DELETE FROM artwork WHERE u_id = $1', user_id)
                         await logging_channel.send(f"👎 <@{user_id}>, your image has been denied.")
 
+                    # Clear the reactions after inspection
+                    await message.clear_reactions()
+
+
 
     async def check_time(self):
         last_phase = None
@@ -268,11 +302,13 @@ class Contests(commands.Cog):
         while True:
             now = datetime.now(timezone('US/Eastern'))
             current_date = now.date()
+            current_timestamp = int(now.timestamp())
             if now.hour == 22:
                 if self.last_winner_announcement_date != current_date:
                     current_contest_start_time = now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
                     channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID)
                     async with self.bot.pool.acquire() as connection:
+                        # Filter artworks for today's contest only
                         rows = await connection.fetch('SELECT u_id, message_id FROM artwork WHERE submitted_on >= $1', current_contest_start_time)
                         for row in rows:
                             try:
@@ -282,8 +318,8 @@ class Contests(commands.Cog):
                                         await connection.execute('UPDATE artwork SET upvotes = $1 WHERE u_id = $2 AND message_id = $3', reaction.count, row['u_id'], row['message_id'])
                             except Exception as e:
                                 print(f"Failed to fetch or process message: {e}")
-
-                        top_artworks = await connection.fetch('SELECT u_id, upvotes FROM artwork ORDER BY upvotes DESC LIMIT 5')
+                        # Fetch top 5 artworks by upvotes for today's contest
+                        top_artworks = await connection.fetch('SELECT u_id, upvotes FROM artwork WHERE submitted_on >= $1 ORDER BY upvotes DESC LIMIT 5', current_contest_start_time)
                         if top_artworks:
                             winners = [artwork['u_id'] for artwork in top_artworks]
                             embed = discord.Embed(
@@ -292,16 +328,20 @@ class Contests(commands.Cog):
                                 color=random.randint(0, 0xFFFFFF))
                             await channel.send(embed=embed)
                             for i, winner in enumerate(winners):
-                                user = await connection.fetchrow('SELECT u_id, xp, level FROM users WHERE u_id = $1', winner)
+                                user = await connection.fetchrow('SELECT u_id, xp, level, consecutive_wins FROM users WHERE u_id = $1', winner)
                                 if user:
                                     new_xp = user['xp'] + XP_AWARDS[i]
                                     new_level = new_xp // 100  # each level requires 100 XP
-                                    await connection.execute('UPDATE users SET xp = $1, level = $2, tokens = tokens + 1 WHERE u_id = $3', new_xp, new_level, winner)
+                                    new_consecutive_wins = user['consecutive_wins'] + 1  # Increment consecutive wins
+                                    last_win_date = current_timestamp  # Update last win date to current timestamp
+                                    await connection.execute('UPDATE users SET xp = $1, level = $2, tokens = tokens + 1, consecutive_wins = $3, last_win_date = $4 WHERE u_id = $5', 
+                                                             new_xp, new_level, new_consecutive_wins, last_win_date, winner)
                                 else:
                                     print(f"No user found for u_id: {winner}")
 
                     self.last_winner_announcement_date = current_date
             await asyncio.sleep(60)
+
 
 
 
