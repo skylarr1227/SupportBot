@@ -23,7 +23,6 @@ class Events(commands.Cog):
             async for m in channel.history(oldest_first=True, limit=1):
                 first_message_id = m.id
                 break
-            
             # If the first message is the one that got deleted, archive and lock the thread
             if first_message_id is None or first_message_id == payload.message_id:
                 await channel.edit(archived=True, locked=True, reason="Original post deleted.")
@@ -33,14 +32,7 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_thread_update(self, before, after):
         if after.parent_id not in CHANNEL_IDS:
-            #if after.parent_id in KNOWN_ISSUES:
-            #    # Edit the specific post
-            #    specific_post_channel = self.bot.get_channel(1114313493450072084)  
-            #    self.specific_post = await specific_post_channel.fetch_message(1114313493450072084)
-            #    new_content = self.specific_post.content + f'\n {after.name}'
-            #    await self.specific_post.edit(content=new_content)
             return
-        
         old = set([tag.name for tag in before.applied_tags if isinstance(tag, discord.ForumTag)])
         new = set([tag.name for tag in after.applied_tags if isinstance(tag, discord.ForumTag)])
         added = new - old
@@ -116,23 +108,7 @@ class Events(commands.Cog):
     async def on_thread_create(self, thread):
         try:
             if thread.parent_id not in CHANNEL_IDS:
-                #if thread.parent_id in KNOWN_ISSUES:
-                #    # Get the specific post
-                #    specific_post_channel = self.bot.get_channel(1114313493450072084)  
-                #    try:
-                #        self.specific_post = await specific_post_channel.fetch_message(1114313493450072084)
-                #    except discord.NotFound:
-                #        print(f"Post with ID {1114313493450072084} not found.")
-                #        return
-                #    except discord.Forbidden:
-                #        print(f"Do not have permission to access post with ID {1114313493450072084}.")
-                #        return
-#
-                #    # Edit the specific post
-                #    new_content = self.specific_post.content + f"\n- {thread.name}"
-                #    await self.specific_post.edit(content=new_content)
                 return
-    
             if not thread.name.startswith('[NEW]'):
                 new_name = '[NEW] ' + thread.name
                 # Ensure the name does not exceed the Discord limit of 100 characters
@@ -143,20 +119,16 @@ class Events(commands.Cog):
             original_message_object = None
             original_message_content = None 
             author = None  
-    
             # Fetch the first message in the thread to get the original author and message
             async for message in thread.history(oldest_first=True, limit=1):
                 author = message.author
                 original_message_object = message
                 original_message_content = message.content
-    
             # Determine the platform based on tags in the original_message
             platform = 0  # Default platform
             if "dream" in original_message_content:
                 platform = 1
             elif "wombot" in original_message_content:# The above code is assigning the value 2 to the
-            # variable "platform".
-            
                 platform = 2
             if original_message_object and original_message_content:
                 # Prepare the data for insertion
@@ -173,26 +145,32 @@ class Events(commands.Cog):
                     'msg_count': thread.message_count  # Or use 'thread.total_message_sent' depending on your requirement
                 }
                 # Insert the data into the Supabase "tickets" table
-                response = self.bot.supabase.table("tickets").insert(payload).execute()
-                await thread.send(
-                    content="Our support team will be with you shortly. Please ensure you have included the following with this request\n- Dream Account Name\n- Web/iOS/Android?\n- Device/Software Version\n- Screenshot(s) of the issue\n*Some of these may not be needed for every request*",
-                    reference=discord.MessageReference(message_id=original_message_object.id, channel_id=original_message_object.channel.id)
-                )   
-
-       
-            
-            return response
-    
+                query = """
+                    INSERT INTO tickets(old_status, new_status, thread_jump_url, support_rep, author_id, original_message, platform, t_id, msg_count)
+                    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                """
+                async with self.bot.pool.acquire() as connection:
+                    await connection.execute(
+                        query,
+                        payload['old_status'],
+                        payload['new_status'],
+                        payload['thread_jump_url'],
+                        payload['support_rep'],
+                        payload['author_id'],
+                        payload['original_message'],
+                        payload['platform'],
+                        payload['t_id'],
+                        payload['msg_count']
+                    )
+                    await thread.send(
+                        content="Our support team will be with you shortly. Please ensure you have included the following with this request\n- Dream Account Name\n- Web/iOS/Android?\n- Device/Software Version\n- Screenshot(s) of the issue\n*Some of these may not be needed for every request*",
+                        reference=discord.MessageReference(message_id=original_message_object.id, channel_id=original_message_object.channel.id)
+                    )  
+            return
         except Exception as e:
             print(f"Error processing thread '{thread.name}': {e}")
 
 
-
-    #@commands.Cog.listener()
-    #async def on_command_error(self, ctx, error):
-    #    global last_error
-    #    last_error = traceback.format_exception(type(error), error, error.__traceback__)
-    
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
