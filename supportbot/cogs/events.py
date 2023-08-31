@@ -5,10 +5,12 @@ from supportbot.core.utils import team
 from collections import defaultdict
 import re
 from discord.errors import NotFound
+import time
 KNOWN_ISSUES = [1102722546232729620]
 CHANNEL_IDS = [1109324122833567744, 1109323625439445012]
 STAFF_CHANNEL_ID = 1111054788487032863
 CHANNEL_IDS2 = [1102722546232729620]
+
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

@@ -10,6 +10,7 @@ import os
 import logging
 import asyncpg
 import random
+import time
 
 logger = logging.getLogger('discord')
 logger.setLevel(logging.ERROR)
@@ -309,13 +310,13 @@ class Contests(commands.Cog):
                     channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID)
                     async with self.bot.pool.acquire() as connection:
                         # Filter artworks for today's contest only
-                        rows = await connection.fetch('SELECT u_id, message_id FROM artwork WHERE submitted_on >= $1', current_contest_start_time)
+                        rows = await connection.fetch('SELECT submitted_by, message_id FROM artwork WHERE submitted_on >= $1', current_contest_start_time)
                         for row in rows:
                             try:
                                 message = await channel.fetch_message(row['message_id'])
                                 for reaction in message.reactions:
                                     if str(reaction.emoji) == "👍":
-                                        await connection.execute('UPDATE artwork SET upvotes = $1 WHERE u_id = $2 AND message_id = $3', reaction.count, row['u_id'], row['message_id'])
+                                        await connection.execute('UPDATE artwork SET upvotes = $1 WHERE submitted_by = $2 AND message_id = $3', reaction.count, row['submitted_by'], message.id)
                             except Exception as e:
                                 print(f"Failed to fetch or process message: {e}")
                         # Fetch top 5 artworks by upvotes for today's contest
