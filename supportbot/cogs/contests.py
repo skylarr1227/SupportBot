@@ -266,11 +266,11 @@ class Contests(commands.Cog):
                     if str(payload.emoji) == "👍":
                         # APPROVE
                         await self.post_image(user_id, message.embeds[0].image.url)
-                        await connection.execute('UPDATE artwork SET inspected_by = $1 WHERE u_id = $2', inspector_id, user_id)
+                        await connection.execute('UPDATE artwork SET inspected_by = $1 WHERE submitted_by = $2', inspector_id, user_id)
                         await logging_channel.send(f"👍 <@{user_id}>, your image has been approved!")
                     elif str(payload.emoji) == "👎":
                         # DENY
-                        await connection.execute('DELETE FROM artwork WHERE u_id = $1', user_id)
+                        await connection.execute('DELETE FROM artwork WHERE submitted_by = $1', user_id)
                         await logging_channel.send(f"👎 <@{user_id}>, your image has been denied.")
 
                     # Clear the reactions after inspection
@@ -320,9 +320,9 @@ class Contests(commands.Cog):
                             except Exception as e:
                                 print(f"Failed to fetch or process message: {e}")
                         # Fetch top 5 artworks by upvotes for today's contest
-                        top_artworks = await connection.fetch('SELECT u_id, upvotes FROM artwork WHERE submitted_on >= $1 ORDER BY upvotes DESC LIMIT 5', current_contest_start_time)
+                        top_artworks = await connection.fetch('SELECT submitted_by, upvotes FROM artwork WHERE submitted_on >= $1 ORDER BY upvotes DESC LIMIT 5', current_contest_start_time)
                         if top_artworks:
-                            winners = [artwork['u_id'] for artwork in top_artworks]
+                            winners = [artwork['submitted_by'] for artwork in top_artworks]
                             embed = discord.Embed(
                                 title=f"Daily Contest Announcement",
                                 description=f"The winners of today's contest are:\n{', '.join(f'<@{winner}>' for winner in winners)}",
