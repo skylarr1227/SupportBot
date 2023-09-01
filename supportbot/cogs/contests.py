@@ -56,6 +56,7 @@ class Contests(commands.Cog):
         self.tasks.append(self.bot.loop.create_task(self.count_votes()))
         self.last_winner_announcement_date = None
         self.theme_message = None
+        self.previous_phase = None
 
     def cog_unload(self):
         if self.theme_message:
@@ -182,23 +183,15 @@ class Contests(commands.Cog):
             row = await connection.fetchrow(query, week_of_year)
             return row[day_of_week] if row else None
 
-    async def initialize_contest(self):
-        try:
-            theme_channel = self.bot.get_channel(THEME_CHANNEL_ID)
-            theme = await self.get_theme()
-            now = datetime.now(timezone('US/Eastern'))
-            week_of_year = now.isocalendar()[1]
-            day_of_week = calendar.day_name[now.weekday()].capitalize()
-            embed = discord.Embed(title=f"{day_of_week}'s Contest of week {week_of_year}", description=f"# Today's theme is\n{theme}", color=random.randint(0, 0xFFFFFF))
-            self.theme_message = await theme_channel.send(embed=embed)
-            self.phase_message = await theme_channel.send("Initializing contest phase...")
-            await self.update_phase()
-            print("Contest initialized")  
-        except Exception as e:
-            print(f"Failed to initialize contest: {e}")  
-
     async def update_phase(self):
         now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
+
+        if self.previous_phase == "In Progress" and now.hour == 0:
+            phase = "Ended or Expired"
+            self.accepting_images = False
+            await self.phase_message.edit(content=f"{phase}")
+            await asyncio.sleep(60)  # Wait for a minute before moving to the next phase
+
         if now.hour < 21:
             phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"
             self.accepting_images = True
@@ -208,8 +201,12 @@ class Contests(commands.Cog):
         else:
             phase = "<:down3:1146208635953873016><:down2:1146208638843748372>"
             self.accepting_images = False
+
+        self.previous_phase = phase  # Update the previous_phase variable
+
         if self.phase_message:
             await self.phase_message.edit(content=f"{phase}")
+
 
 
     async def inspect_image(self, user_id, image_url):
