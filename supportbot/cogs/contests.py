@@ -183,6 +183,21 @@ class Contests(commands.Cog):
             row = await connection.fetchrow(query, week_of_year)
             return row[day_of_week] if row else None
 
+    async def initialize_contest(self):
+        try:
+            theme_channel = self.bot.get_channel(THEME_CHANNEL_ID)
+            theme = await self.get_theme()
+            now = datetime.now(timezone('US/Eastern'))
+            week_of_year = now.isocalendar()[1]
+            day_of_week = calendar.day_name[now.weekday()].capitalize()
+            embed = discord.Embed(title=f"{day_of_week}'s Contest of week {week_of_year}", description=f"# Today's theme is\n{theme}", color=random.randint(0, 0xFFFFFF))
+            self.theme_message = await theme_channel.send(embed=embed)
+            self.phase_message = await theme_channel.send("Initializing contest phase...")
+            await self.update_phase()
+            print("Contest initialized")  
+        except Exception as e:
+            print(f"Failed to initialize contest: {e}")  
+
     async def update_phase(self):
         now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
 
@@ -206,7 +221,6 @@ class Contests(commands.Cog):
 
         if self.phase_message:
             await self.phase_message.edit(content=f"{phase}")
-
 
 
     async def inspect_image(self, user_id, image_url):
