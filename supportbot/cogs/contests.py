@@ -55,12 +55,20 @@ class Contests(commands.Cog):
         self.tasks.append(self.bot.loop.create_task(self.check_time()))
         self.tasks.append(self.bot.loop.create_task(self.count_votes()))
         self.last_winner_announcement_date = None
+        self.theme_message = None
 
     def cog_unload(self):
+        if self.theme_message:
+            loop = asyncio.get_event_loop()
+            loop.create_task(self.edit_theme_message())
         for task in self.tasks:
             task.cancel()
    
-    
+    async def edit_theme_message(self):
+        embed = self.theme_message.embeds[0]
+        embed.color = 0xFF0000  # Set the color to red
+        await self.theme_message.edit(embed=embed)
+
     async def purchase_coupon(self, connection, platform):
         coupon = await connection.fetchrow('SELECT * FROM coupons WHERE platform = $1 AND purchased IS NULL LIMIT 1', platform)
         if coupon:
@@ -178,8 +186,11 @@ class Contests(commands.Cog):
         try:
             theme_channel = self.bot.get_channel(THEME_CHANNEL_ID)
             theme = await self.get_theme()
-            embed = discord.Embed(title="Today's theme is", description=theme, color=random.randint(0, 0xFFFFFF))
-            await theme_channel.send(embed=embed)
+            now = datetime.now(timezone('US/Eastern'))
+            week_of_year = now.isocalendar()[1]
+            day_of_week = calendar.day_name[now.weekday()].capitalize()
+            embed = discord.Embed(title=f"{day_of_week}'s Contest of week {week_of_year}", description=f"# Today's theme is\n{theme}", color=random.randint(0, 0xFFFFFF))
+            self.theme_message = await theme_channel.send(embed=embed)
             self.phase_message = await theme_channel.send("Initializing contest phase...")
             await self.update_phase()
             print("Contest initialized")  
