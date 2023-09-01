@@ -132,7 +132,7 @@ class Contests(commands.Cog):
             current_phase = f"Downtime (Ends in <t:{int(epoch_end_downtime)}:R>)"
         embed = discord.Embed(
             title=f"Contest Stats",
-            description=f"Current Phase: {current_phase}\nEnd of In-Progress Phase: {epoch_end_in_progress}\nEnd of Voting Phase: {epoch_end_voting}\nEnd of Downtime: {epoch_end_downtime}",
+            description=f"Current Phase: {current_phase}\n\nOverview/times\nEnd of In-Progress Phase: <t:{int(epoch_end_in_progress)}:R>\nEnd of Voting Phase: <t:{int(epoch_end_voting)}:R>\nEnd of Downtime: <t:{int(epoch_end_downtime)}:R>",
             color=random.randint(0, 0xFFFFFF)
         )
         await ctx.send(embed=embed)
@@ -233,7 +233,6 @@ class Contests(commands.Cog):
                     await message.author.send('You have already submitted an image for the current contest. Only one submission is allowed.')
                     return
                 # Insert a new artwork submission
-                
                 reply = await message.reply("Do you want to submit this image for the daily contest? (yes/no)")
                 def check(m):
                     return m.author == message.author and m.channel == message.channel and m.content.lower() in ["yes", "no"]
@@ -272,7 +271,6 @@ class Contests(commands.Cog):
                         # DENY
                         await connection.execute('DELETE FROM artwork WHERE submitted_by = $1', user_id)
                         await logging_channel.send(f"👎 <@{user_id}>, your image has been denied.")
-
                     # Clear the reactions after inspection
                     await message.clear_reactions()
 
@@ -320,33 +318,56 @@ class Contests(commands.Cog):
                             except Exception as e:
                                 print(f"Failed to fetch or process message: {e}")
                         # Fetch top 5 artworks by upvotes for today's contest
-                        top_artworks = await connection.fetch('SELECT submitted_by, upvotes FROM artwork WHERE submitted_on >= $1 ORDER BY upvotes DESC LIMIT 5', current_contest_start_time)
+                        top_artworks = await connection.fetch('SELECT submitted_by, upvotes FROM artwork WHERE submitted_on >= $1 ORDER BY upvotes DESC, submitted_by ASC', current_contest_start_time)
                         if top_artworks:
-                            winners = [artwork['submitted_by'] for artwork in top_artworks]
+                            awards = XP_AWARDS.copy()
+                            winners = []
+                            prev_upvotes = -1
+                            tie_pool = []
+                            tie_pool_xp = 0
+                            for i, artwork in enumerate(top_artworks[:5]):
+                                if artwork['upvotes'] == prev_upvotes:
+                                    tie_pool.append(artwork['submitted_by'])
+                                    tie_pool_xp += awards[i]
+                                else:
+                                    if tie_pool:
+                                        distributed_xp = tie_pool_xp // len(tie_pool)
+                                        for tied_winner in tie_pool:
+                                            winners.append((tied_winner, distributed_xp))
+                                    tie_pool = [artwork['submitted_by']]
+                                    tie_pool_xp = awards[i]
+                                prev_upvotes = artwork['upvotes']
+    
+                            if tie_pool:
+                                distributed_xp = tie_pool_xp // len(tie_pool)
+                                for tied_winner in tie_pool:
+                                    winners.append((tied_winner, distributed_xp))
+                            winner_mentions = ', '.join(f"<@{winner[0]}>" for winner in winners)
                             embed = discord.Embed(
                                 title=f"Daily Contest Announcement",
-                                description=f"The winners of today's contest are:\n{', '.join(f'<@{winner}>' for winner in winners)}",
-                                color=random.randint(0, 0xFFFFFF))
+                                description=f"The winners of today's contest are:\n{winner_mentions}",
+                                color=random.randint(0, 0xFFFFFF)
+                            )
                             await channel.send(embed=embed)
-                            for i, winner in enumerate(winners):
+    
+                            for winner, xp_award in winners:
                                 user = await connection.fetchrow('SELECT u_id, xp, level, consecutive_wins FROM users WHERE u_id = $1', winner)
                                 if user:
-                                    new_xp = user['xp'] + XP_AWARDS[i]
-                                    new_level = new_xp // 100  # each level requires 100 XP
-                                    new_consecutive_wins = user['consecutive_wins'] + 1  # Increment consecutive wins
-                                    last_win_date = current_timestamp  # Update last win date to current timestamp
-                                    await connection.execute('UPDATE users SET xp = $1, level = $2, tokens = tokens + 1, consecutive_wins = $3, last_win_date = $4 WHERE u_id = $5', 
+                                    new_xp = user['xp'] + xp_award
+                                    new_level = new_xp // 100
+                                    new_consecutive_wins = user['consecutive_wins'] + 1
+                                    last_win_date = current_timestamp
+                                    await connection.execute('UPDATE users SET xp = $1, level = $2, tokens = tokens + 1, consecutive_wins = $3, last_win_date = $4 WHERE u_id = $5',
                                                              new_xp, new_level, new_consecutive_wins, last_win_date, winner)
                                 else:
                                     print(f"No user found for u_id: {winner}")
-
+    
                     self.last_winner_announcement_date = current_date
             await asyncio.sleep(60)
-
-
-
-
-
-
+    
+    
+    
+    
+    
 async def setup(bot):
     await bot.add_cog(Contests(bot))
