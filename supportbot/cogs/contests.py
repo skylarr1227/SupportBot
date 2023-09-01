@@ -207,13 +207,13 @@ class Contests(commands.Cog):
             await self.phase_message.edit(content=f"{phase}")
             await asyncio.sleep(60)  # Wait for a minute before moving to the next phase
 
-        if now.hour < 21:
+        if 0 <= now.hour < 18:  # 12:00am - 5:59pm
             phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"
             self.accepting_images = True
-        elif now.hour == 21:
+        elif 18 <= now.hour < 19:  # 6:00pm - 6:59pm
             phase = "<:vote:1146208634322296923>"
             self.accepting_images = False
-        else:
+        else:  # 7:00pm - 11:59pm
             phase = "<:down3:1146208635953873016><:down2:1146208638843748372>"
             self.accepting_images = False
 
@@ -221,6 +221,7 @@ class Contests(commands.Cog):
 
         if self.phase_message:
             await self.phase_message.edit(content=f"{phase}")
+
 
 
     async def inspect_image(self, user_id, image_url):
@@ -234,7 +235,8 @@ class Contests(commands.Cog):
         message = await channel.send(f'<@{user_id}>', embed=discord.Embed(description=f"{user_id}").set_image(url=image_url))
         await message.add_reaction("👍")
         async with self.bot.pool.acquire() as connection:
-            await connection.execute('UPDATE artwork SET message_id = $1 WHERE submitted_by = $2', message.id, user_id)
+            first_attachment_url = message.attachments[0].url     
+            await connection.execute('UPDATE artwork SET message_id = $1, link = 3$ WHERE submitted_by = $2', message.id, user_id, first_attachment_url)
 
 
 
@@ -300,20 +302,28 @@ class Contests(commands.Cog):
 
     async def check_time(self):
         last_phase = None
+        downtime_message_sent = False  # Initialize the flag
+        theme_channel = self.bot.get_channel(THEME_CHANNEL_ID)  
         while True:
             now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
-            if 0 <= now.hour < 20:
-                phase = "In Progress (12:00am - 8pm EST)"
+
+            if 0 <= now.hour < 18:  # 12:00am - 5:59pm
+                phase = "In Progress (12:00am - 5:59pm EST)"
                 self.accepting_images = True
-            elif now.hour == 20:
-                phase = "Voting (8pm - 9pm EST)"
+            elif 18 <= now.hour < 19:  # 6:00pm - 6:59pm
+                phase = "Voting (6:00pm - 6:59pm EST)"
                 self.accepting_images = False
-            else:  # 21 to 23
-                phase = "Downtime (9:00pm - 12:00am)"
+            else:  # 7:00pm - 11:59pm
+                phase = "Downtime (7:00pm - 11:59pm EST)"
                 self.accepting_images = False
 
             if phase != last_phase:
                 await self.update_phase()
+                if phase == "Downtime" and not downtime_message_sent:
+                    await theme_channel.send("The contest has ended for today. Downtime has started!")  # Send message on Downtime
+                    downtime_message_sent = True  # Set the flag to True
+                if phase != "Downtime":  # Reset the flag if the phase is not Downtime
+                    downtime_message_sent = False
                 last_phase = phase
 
             await asyncio.sleep(60)
@@ -328,6 +338,7 @@ class Contests(commands.Cog):
                 if self.last_winner_announcement_date != current_date:
                     current_contest_start_time = now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
                     channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID)
+                    theme_channel = self.bot.get_channel(THEME_CHANNEL_ID)
                     async with self.bot.pool.acquire() as connection:
                         # Filter artworks for today's contest only
                         rows = await connection.fetch('SELECT submitted_by, message_id FROM artwork WHERE submitted_on >= $1', current_contest_start_time)
@@ -340,7 +351,7 @@ class Contests(commands.Cog):
                             except Exception as e:
                                 print(f"Failed to fetch or process message: {e}")
                         # Fetch top 5 artworks by upvotes for today's contest
-                        top_artworks = await connection.fetch('SELECT submitted_by, upvotes FROM artwork WHERE submitted_on >= $1 ORDER BY upvotes DESC, submitted_by ASC', current_contest_start_time)
+                        top_artworks = await connection.fetch('SELECT submitted_by, upvotes, link FROM artwork WHERE submitted_on >= $1 ORDER BY upvotes DESC, submitted_by ASC', current_contest_start_time)
                         if top_artworks:
                             awards = XP_AWARDS.copy()
                             winners = []
@@ -364,13 +375,16 @@ class Contests(commands.Cog):
                                 distributed_xp = tie_pool_xp // len(tie_pool)
                                 for tied_winner in tie_pool:
                                     winners.append((tied_winner, distributed_xp))
-                            winner_mentions = ', '.join(f"<@{winner[0]}>" for winner in winners)
+                            winner_mentions = ''
+                            for i, (winner, xp) in enumerate(winners):
+                                winner_mentions += f"{i + 1}. <@{winner}>\n"
+                            
                             embed = discord.Embed(
                                 title=f"Daily Contest Announcement",
                                 description=f"The winners of today's contest are:\n{winner_mentions}",
                                 color=random.randint(0, 0xFFFFFF)
                             )
-                            await channel.send(embed=embed)
+                            await theme_channel.send(embed=embed)
     
                             for winner, xp_award in winners:
                                 user = await connection.fetchrow('SELECT u_id, xp, level, consecutive_wins FROM users WHERE u_id = $1', winner)
