@@ -378,12 +378,13 @@ class Contests(commands.Cog):
                             winner_mentions = ''
                             for i, (winner, xp) in enumerate(winners):
                                 winner_mentions += f"{i + 1}. <@{winner}>\n"
-                            
+                            first_place_artwork_link = top_artworks[0]['link']
                             embed = discord.Embed(
                                 title=f"Daily Contest Announcement",
                                 description=f"The winners of today's contest are:\n{winner_mentions}",
                                 color=random.randint(0, 0xFFFFFF)
                             )
+                            embed.set_image(url=first_place_artwork_link)
                             await theme_channel.send(embed=embed)
     
                             for winner, xp_award in winners:
