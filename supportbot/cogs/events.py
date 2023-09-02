@@ -180,7 +180,7 @@ class Events(commands.Cog):
     async def on_message(self, message):
         if message.author.bot:
             return
-        if message.channel.id in CHANNEL_IDS or (message.channel.parent and message.channel.parent.id in CHANNEL_IDS):
+        if message.channel.id in CHANNEL_IDS or (isinstance(message.channel, discord.Thread) and message.channel.parent and message.channel.parent.id in CHANNEL_IDS):
             try:
                 # Prepare data for database insertion
                 payload = {
