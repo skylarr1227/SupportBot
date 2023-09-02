@@ -225,7 +225,7 @@ class Events(commands.Cog):
                         msg['author'],
                         msg['content'],
                         msg['timestamp'],
-                        msg['attachments'],
+                        json.dumps(msg['attachments']),
                         json.dumps(msg['reactions'])  # Assuming you want to store reactions as a JSON string
                     )
                     for msg in self.message_batch
