@@ -206,9 +206,10 @@ class Events(commands.Cog):
                     'attachments': [attachment.url for attachment in message.attachments],
                     'reactions': {str(reaction.emoji): reaction.count for reaction in message.reactions}
                 }
+                self.message_batch.append(payload)
             except Exception as e:
                 print(f"Error in message storing: {e}")
-            self.message_batch.append(payload)
+            
             if len(self.message_batch) >= self.batch_size:
                 query = """
                     INSERT INTO message_logs(id, channel_name, channel_id, parent_id, parent_name, guild_id, author, content, timestamp, attachments, reactions)
