@@ -181,9 +181,7 @@ class Events(commands.Cog):
             "id": user.id,
             "username": user.name,
             "discriminator": user.discriminator,
-            "avatar": str(user.avatar_url),
-            "is_bot": user.bot,
-            "created_at": user.created_at.isoformat(),
+            "avatar": str(user.avatar.url) if user.avatar else None
         }
 
     @commands.Cog.listener()
