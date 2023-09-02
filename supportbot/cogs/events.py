@@ -198,36 +198,36 @@ class Events(commands.Cog):
                 }
             except Exception as e:
                 print(f"Error in message storing: {e}")
-        self.message_batch.append(payload)
-        if len(self.message_batch) >= self.batch_size:
-            query = """
-                INSERT INTO message_logs(id, channel_name, channel_id, parent_id, parent_name, guild_id, author, content, timestamp, attachments, reactions)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-            """
-            # Prepare the data for asyncpg's 'executemany' style
-            formatted_data = [
-                (
-                    msg['id'],
-                    msg['channel_name'],
-                    msg['channel_id'],
-                    msg['parent_id'],
-                    msg['parent_name'],
-                    msg['guild_id'],
-                    msg['author'],
-                    msg['content'],
-                    msg['timestamp'],
-                    msg['attachments'],
-                    json.dumps(msg['reactions'])  # Assuming you want to store reactions as a JSON string
-                )
-                for msg in self.message_batch
-            ]
-
-            # Using a connection pool
-            async with self.bot.pool.acquire() as connection:
-                await connection.executemany(query, formatted_data)
-
-            # Clear the batch for the next set of messages
-            self.message_batch.clear()
+            self.message_batch.append(payload)
+            if len(self.message_batch) >= self.batch_size:
+                query = """
+                    INSERT INTO message_logs(id, channel_name, channel_id, parent_id, parent_name, guild_id, author, content, timestamp, attachments, reactions)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                """
+                # Prepare the data for asyncpg's 'executemany' style
+                formatted_data = [
+                    (
+                        msg['id'],
+                        msg['channel_name'],
+                        msg['channel_id'],
+                        msg['parent_id'],
+                        msg['parent_name'],
+                        msg['guild_id'],
+                        msg['author'],
+                        msg['content'],
+                        msg['timestamp'],
+                        msg['attachments'],
+                        json.dumps(msg['reactions'])  # Assuming you want to store reactions as a JSON string
+                    )
+                    for msg in self.message_batch
+                ]
+    
+                # Using a connection pool
+                async with self.bot.pool.acquire() as connection:
+                    await connection.executemany(query, formatted_data)
+    
+                # Clear the batch for the next set of messages
+                self.message_batch.clear()
 
 
     @commands.Cog.listener()
