@@ -176,7 +176,7 @@ class Events(commands.Cog):
             print(f"Error processing thread '{thread.name}': {e}")
 
 
-    def user_to_json(user):
+    def user_to_json(self, user):
         return {
             "id": user.id,
             "username": user.name,
@@ -200,7 +200,7 @@ class Events(commands.Cog):
                     'parent_id': message.channel.parent_id,
                     'parent_name': message.channel.parent.name if message.channel.parent else None,
                     'guild_id': message.guild.id,
-                    'author': json.dumps(user_to_json(message.author)),  # Converting user to JSON string
+                    'author': json.dumps(self.user_to_json(message.author)),  # Converting user to JSON string
                     'content': message.content,
                     'timestamp': message.created_at,
                     'attachments': [attachment.url for attachment in message.attachments],
