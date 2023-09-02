@@ -210,7 +210,7 @@ class Events(commands.Cog):
             
             if len(self.message_batch) >= self.batch_size:
                 query = """
-                    INSERT INTO message_logs(id, channel_name, channel_id, parent_id, parent_name, guild_id, author, content, timestamp, attachments, reactions)
+                    INSERT INTO messages(id, channel_name, channel_id, parent_id, parent_name, guild_id, author, content, timestamp, attachments, reactions)
                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                 """
                 # Prepare the data for asyncpg's 'executemany' style
