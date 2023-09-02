@@ -6,6 +6,8 @@ from collections import defaultdict
 import re
 from discord.errors import NotFound
 import time
+import json
+
 KNOWN_ISSUES = [1102722546232729620]
 CHANNEL_IDS = [1109324122833567744, 1109323625439445012]
 STAFF_CHANNEL_ID = 1111054788487032863
@@ -14,7 +16,8 @@ CHANNEL_IDS2 = [1102722546232729620]
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
+        self.message_batch = []
+        self.batch_size = 10 
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload):
@@ -172,6 +175,59 @@ class Events(commands.Cog):
         except Exception as e:
             print(f"Error processing thread '{thread.name}': {e}")
 
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.author.bot:
+            return
+        if message.channel.id in CHANNEL_IDS or (message.channel.parent and message.channel.parent.id in CHANNEL_IDS):
+            try:
+                # Prepare data for database insertion
+                payload = {
+                    'id': message.id,
+                    'channel_name': message.channel.name,
+                    'channel_id': message.channel.id,
+                    'parent_id': message.channel.parent_id,
+                    'parent_name': message.channel.parent.name if message.channel.parent else None,
+                    'guild_id': message.guild.id,
+                    'author': json.dumps(user_to_json(message.author)),  # Converting user to JSON string
+                    'content': message.content,
+                    'timestamp': message.created_at,
+                    'attachments': [attachment.url for attachment in message.attachments],
+                    'reactions': {str(reaction.emoji): reaction.count for reaction in message.reactions}
+                }
+            except Exception as e:
+                print(f"Error in message storing: {e}")
+        self.message_batch.append(payload)
+        if len(self.message_batch) >= self.batch_size:
+            query = """
+                INSERT INTO message_logs(id, channel_name, channel_id, parent_id, parent_name, guild_id, author, content, timestamp, attachments, reactions)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            """
+            # Prepare the data for asyncpg's 'executemany' style
+            formatted_data = [
+                (
+                    msg['id'],
+                    msg['channel_name'],
+                    msg['channel_id'],
+                    msg['parent_id'],
+                    msg['parent_name'],
+                    msg['guild_id'],
+                    msg['author'],
+                    msg['content'],
+                    msg['timestamp'],
+                    msg['attachments'],
+                    json.dumps(msg['reactions'])  # Assuming you want to store reactions as a JSON string
+                )
+                for msg in self.message_batch
+            ]
+
+            # Using a connection pool
+            async with self.bot.pool.acquire() as connection:
+                await connection.executemany(query, formatted_data)
+
+            # Clear the batch for the next set of messages
+            self.message_batch.clear()
 
 
     @commands.Cog.listener()
