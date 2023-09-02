@@ -176,6 +176,16 @@ class Events(commands.Cog):
             print(f"Error processing thread '{thread.name}': {e}")
 
 
+    def user_to_json(user):
+        return {
+            "id": user.id,
+            "username": user.name,
+            "discriminator": user.discriminator,
+            "avatar": str(user.avatar_url),
+            "is_bot": user.bot,
+            "created_at": user.created_at.isoformat(),
+        }
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
@@ -221,11 +231,11 @@ class Events(commands.Cog):
                     )
                     for msg in self.message_batch
                 ]
-    
+
                 # Using a connection pool
                 async with self.bot.pool.acquire() as connection:
                     await connection.executemany(query, formatted_data)
-    
+
                 # Clear the batch for the next set of messages
                 self.message_batch.clear()
 
