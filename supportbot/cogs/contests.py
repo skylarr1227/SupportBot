@@ -59,7 +59,6 @@ class Contests(commands.Cog):
         self.tasks.append(self.bot.loop.create_task(self.initialize_contest()))
         self.tasks.append(self.bot.loop.create_task(self.check_time()))
         self.tasks.append(self.bot.loop.create_task(self.count_votes()))
-        self.tasks.append(self.bot.loop.create_task(self.four_hour_alerts()))
         self.tasks.append(self.bot.loop.create_task(self.one_hour_alert()))
         self.tasks.append(self.bot.loop.create_task(self.thirty_min_alert()))
 
@@ -70,29 +69,7 @@ class Contests(commands.Cog):
         for task in self.tasks:
             task.cancel()
    
-    async def four_hour_alerts(self):
-        while True:
-            now = datetime.now(timezone('US/Eastern'))
-            if self.previous_phase == "In Progress (12:00am - 5:59pm EST)":  # Check if the phase is "In Progress"
-                async with self.bot.pool.acquire() as connection:
-                    # Fetch the total number of entries, approved, and denied artworks from the database
-                    total_entries = await connection.fetchval('SELECT COUNT(*) FROM artwork WHERE submitted_on >= $1', self.STARTED)
-                    approved_count = await connection.fetchval('SELECT COUNT(*) FROM artwork WHERE inspected_by IS NOT NULL AND submitted_on >= $1', self.STARTED)
-                    denied_count = total_entries - approved_count
-                    # Calculate the remaining time
-                    remaining_time = "1 hour"  # This needs to be calculated based on the contest end time
 
-                    # Create an embed for the alert
-                    embed = discord.Embed(
-                        title="Contest Update",
-                        description=f"Total Entries: {total_entries}\nApproved: {approved_count}\nDenied: {denied_count}\nTime Remaining: {remaining_time}",
-                        color=random.randint(0, 0xFFFFFF)
-                    )
-                    # Send the alert to the webhook
-                    webhook = discord.Webhook.from_url('https://discord.com/api/webhooks/1148282084960518186/B1GO3v1isc3PQnY2zU7keL5EL959eGVvPMhXGmhibJ_AB2eP7ajFSbRluEZ1PJQNi_uR', adapter=discord.AsyncWebhookAdapter(self.bot.session))
-                    await webhook.send(embed=embed)
-                    
-            await asyncio.sleep(14400)  # Sleep for 4 hours before checking again
 
     async def one_hour_alert(self):
         while True:
