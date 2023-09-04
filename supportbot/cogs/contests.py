@@ -281,6 +281,7 @@ class Contests(commands.Cog):
         if 0 <= now.hour < 18:  # 12:00am - 5:59pm
             phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"
             self.accepting_images = True
+            self.STARTED = now
         elif 18 <= now.hour < 19:  # 6:00pm - 6:59pm
             phase = "<:vote:1146208634322296923>"
             self.accepting_images = False
@@ -322,7 +323,7 @@ class Contests(commands.Cog):
                     await connection.execute('INSERT INTO users(u_id, xp, level) VALUES($1, $2, $3)', user_id, 0, 0)
                 now = datetime.now(timezone('US/Eastern'))
                 current_contest_start_time = now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
-                self.START = current_contest_start_time
+                
                 # Check if the user has already submitted an image for the current contest
                 row = await connection.fetchrow('SELECT submitted_by FROM artwork WHERE submitted_by = $1 AND submitted_on >= $2', user_id, current_contest_start_time)
                 if row:
