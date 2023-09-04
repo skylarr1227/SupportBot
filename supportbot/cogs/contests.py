@@ -59,8 +59,7 @@ class Contests(commands.Cog):
         self.tasks.append(self.bot.loop.create_task(self.initialize_contest()))
         self.tasks.append(self.bot.loop.create_task(self.check_time()))
         self.tasks.append(self.bot.loop.create_task(self.count_votes()))
-        self.tasks.append(self.bot.loop.create_task(self.one_hour_alert()))
-        self.tasks.append(self.bot.loop.create_task(self.thirty_min_alert()))
+
 
     def cog_unload(self):
         if self.theme_message:
@@ -71,45 +70,7 @@ class Contests(commands.Cog):
    
 
 
-    async def one_hour_alert(self):
-        while True:
-            now = datetime.now(timezone('US/Eastern'))
-            end_in_progress = datetime(now.year, now.month, now.day, 20, 0, tzinfo=timezone('US/Eastern'))
-            remaining_time = end_in_progress - now
-            if remaining_time.total_seconds() <= 3600:  # 1 hour or less remaining
-                # Create an embed for the alert
-                embed = discord.Embed(
-                    title="Contest Ending Soon",
-                    description=f"The In Progress phase is ending in {remaining_time}.\nPlease submit your entries before the time is up.",
-                    color=random.randint(0, 0xFFFFFF)
-                )
-                # Send the alert to the webhook
-                webhook = discord.Webhook.from_url('https://discord.com/api/webhooks/1148282084960518186/B1GO3v1isc3PQnY2zU7keL5EL959eGVvPMhXGmhibJ_AB2eP7ajFSbRluEZ1PJQNi_uR', adapter=discord.AsyncWebhookAdapter(self.bot.session))
-                await webhook.send(embed=embed)
-                
-                await asyncio.sleep(3600)  # Sleep for 1 hour to avoid sending the alert multiple times
-            else:
-                await asyncio.sleep(300)  # Sleep for 5 minutes before checking again
-
-    async def thirty_min_alert(self):
-        while True:
-            now = datetime.now(timezone('US/Eastern'))
-            new_contest_start_time = datetime(now.year, now.month, now.day, 0, 0, tzinfo=timezone('US/Eastern')) + timedelta(days=1)
-            remaining_time = new_contest_start_time - now
-            if remaining_time.total_seconds() <= 1800: 
-                # Fetch the theme for the next contest
-                next_day = datetime.now(timezone('US/Eastern')) + timedelta(days=1)
-                next_theme = await self.get_theme(next_day)
-                embed = discord.Embed(
-                    title="New Contest Starting Soon",
-                    description=f"The next contest will start in {remaining_time}.\nSneak Peak of the Next Theme: {next_theme}",
-                    color=random.randint(0, 0xFFFFFF)
-                )
-                # Send the alert to the webhook
-                webhook = discord.Webhook.from_url('https://discord.com/api/webhooks/1148282084960518186/B1GO3v1isc3PQnY2zU7keL5EL959eGVvPMhXGmhibJ_AB2eP7ajFSbRluEZ1PJQNi_uR', adapter=discord.AsyncWebhookAdapter(self.bot.session))
-                await webhook.send(embed=embed)
-                await asyncio.sleep(1800) 
-                await asyncio.sleep(300)  
+    
 
 
     async def edit_theme_message(self):
