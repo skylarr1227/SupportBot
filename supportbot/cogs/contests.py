@@ -55,10 +55,11 @@ class Contests(commands.Cog):
         self.last_winner_announcement_date = None
         self.theme_message = None
         self.previous_phase = None
+        self.STARTED = None
         self.tasks.append(self.bot.loop.create_task(self.initialize_contest()))
         self.tasks.append(self.bot.loop.create_task(self.check_time()))
         self.tasks.append(self.bot.loop.create_task(self.count_votes()))
-        #self.tasks.append(self.bot.loop.create_task(self.four_hour_alerts()))
+        self.tasks.append(self.bot.loop.create_task(self.four_hour_alerts()))
         #self.tasks.append(self.bot.loop.create_task(self.one_hour_alert()))
         #self.tasks.append(self.bot.loop.create_task(self.thirty_min_alert()))
 
@@ -75,8 +76,8 @@ class Contests(commands.Cog):
             if self.previous_phase == "In Progress (12:00am - 5:59pm EST)":  # Check if the phase is "In Progress"
                 async with self.bot.pool.acquire() as connection:
                     # Fetch the total number of entries, approved, and denied artworks from the database
-                    total_entries = await connection.fetchval('SELECT COUNT(*) FROM artwork WHERE submitted_on >= $1', current_contest_start_time)
-                    approved_count = await connection.fetchval('SELECT COUNT(*) FROM artwork WHERE inspected_by IS NOT NULL AND submitted_on >= $1', current_contest_start_time)
+                    total_entries = await connection.fetchval('SELECT COUNT(*) FROM artwork WHERE submitted_on >= $1', self.STARTED)
+                    approved_count = await connection.fetchval('SELECT COUNT(*) FROM artwork WHERE inspected_by IS NOT NULL AND submitted_on >= $1', self.STARTED)
                     denied_count = total_entries - approved_count
                     # Calculate the remaining time
                     remaining_time = "1 hour"  # This needs to be calculated based on the contest end time
@@ -91,7 +92,7 @@ class Contests(commands.Cog):
                     webhook = discord.Webhook.from_url('https://discord.com/api/webhooks/1148282084960518186/B1GO3v1isc3PQnY2zU7keL5EL959eGVvPMhXGmhibJ_AB2eP7ajFSbRluEZ1PJQNi_uR', adapter=discord.AsyncWebhookAdapter(self.bot.session))
                     await webhook.send(embed=embed)
                     
-            await asyncio.sleep(14400)  # Sleep for 4 hours before checking again
+                await asyncio.sleep(14400)  # Sleep for 4 hours before checking again
 
     async def one_hour_alert(self):
         while True:
@@ -321,6 +322,7 @@ class Contests(commands.Cog):
                     await connection.execute('INSERT INTO users(u_id, xp, level) VALUES($1, $2, $3)', user_id, 0, 0)
                 now = datetime.now(timezone('US/Eastern'))
                 current_contest_start_time = now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+                self.START = current_contest_start_time
                 # Check if the user has already submitted an image for the current contest
                 row = await connection.fetchrow('SELECT submitted_by FROM artwork WHERE submitted_by = $1 AND submitted_on >= $2', user_id, current_contest_start_time)
                 if row:
