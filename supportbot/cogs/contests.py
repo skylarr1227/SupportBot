@@ -58,9 +58,9 @@ class Contests(commands.Cog):
         self.tasks.append(self.bot.loop.create_task(self.initialize_contest()))
         self.tasks.append(self.bot.loop.create_task(self.check_time()))
         self.tasks.append(self.bot.loop.create_task(self.count_votes()))
-        self.tasks.append(self.bot.loop.create_task(self.four_hour_alerts()))
-        self.tasks.append(self.bot.loop.create_task(self.one_hour_alert()))
-        self.tasks.append(self.bot.loop.create_task(self.thirty_min_alert()))
+        #self.tasks.append(self.bot.loop.create_task(self.four_hour_alerts()))
+        #self.tasks.append(self.bot.loop.create_task(self.one_hour_alert()))
+        #self.tasks.append(self.bot.loop.create_task(self.thirty_min_alert()))
 
     def cog_unload(self):
         if self.theme_message:
