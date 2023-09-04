@@ -60,8 +60,8 @@ class Contests(commands.Cog):
         self.tasks.append(self.bot.loop.create_task(self.check_time()))
         self.tasks.append(self.bot.loop.create_task(self.count_votes()))
         self.tasks.append(self.bot.loop.create_task(self.four_hour_alerts()))
-        #self.tasks.append(self.bot.loop.create_task(self.one_hour_alert()))
-        #self.tasks.append(self.bot.loop.create_task(self.thirty_min_alert()))
+        self.tasks.append(self.bot.loop.create_task(self.one_hour_alert()))
+        self.tasks.append(self.bot.loop.create_task(self.thirty_min_alert()))
 
     def cog_unload(self):
         if self.theme_message:
@@ -92,7 +92,7 @@ class Contests(commands.Cog):
                     webhook = discord.Webhook.from_url('https://discord.com/api/webhooks/1148282084960518186/B1GO3v1isc3PQnY2zU7keL5EL959eGVvPMhXGmhibJ_AB2eP7ajFSbRluEZ1PJQNi_uR', adapter=discord.AsyncWebhookAdapter(self.bot.session))
                     await webhook.send(embed=embed)
                     
-                await asyncio.sleep(14400)  # Sleep for 4 hours before checking again
+            await asyncio.sleep(14400)  # Sleep for 4 hours before checking again
 
     async def one_hour_alert(self):
         while True:
