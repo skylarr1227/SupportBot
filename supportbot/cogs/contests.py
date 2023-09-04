@@ -313,31 +313,56 @@ class Contests(commands.Cog):
 
     async def check_time(self):
         last_phase = None
-        downtime_message_sent = False  # Initialize the flag
-        theme_channel = self.bot.get_channel(THEME_CHANNEL_ID)  
+        theme_channel = self.bot.get_channel(THEME_CHANNEL_ID)
+        alert_sent_0930 = False
+        alert_sent_1730 = False
+        downtime_message_sent = False
+
+        async with self.bot.pool.acquire() as connection:
+            row = await connection.fetchrow('SELECT contests_state FROM tasks WHERE contests_time = (SELECT MAX(contests_time) FROM tasks)')
+            if row:
+                state_data = row['contests_state']
+                alert_sent_0930, alert_sent_1730, downtime_message_sent = map(bool, map(int, state_data.split(',')))
+
         while True:
             now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
-
+            current_phase = None
             if 0 <= now.hour < 18:  # 12:00am - 5:59pm
-                phase = "In Progress (12:00am - 5:59pm EST)"
-                self.accepting_images = True
+                current_phase = "In Progress (12:00am - 5:59pm EST)"
             elif 18 <= now.hour < 19:  # 6:00pm - 6:59pm
-                phase = "Voting (6:00pm - 6:59pm EST)"
-                self.accepting_images = False
+                current_phase = "Voting (6:00pm - 6:59pm EST)"
             else:  # 7:00pm - 11:59pm
-                phase = "Downtime (7:00pm - 11:59pm EST)"
-                self.accepting_images = False
+                current_phase = "Downtime (7:00pm - 11:59pm EST)"
 
-            if phase != last_phase:
+            if current_phase != last_phase:
                 await self.update_phase()
-                if phase == "Downtime" and not downtime_message_sent:
-                    await theme_channel.send("The contest has ended for today. Downtime has started!")  # Send message on Downtime
-                    downtime_message_sent = True  # Set the flag to True
-                if phase != "Downtime":  # Reset the flag if the phase is not Downtime
-                    downtime_message_sent = False
-                last_phase = phase
+                if "Downtime" in current_phase and not downtime_message_sent:
+                    await theme_channel.send("The contest has ended for today. Enjoy a few hours of downtime!")
+                    downtime_message_sent = True
+                last_phase = current_phase
 
-            await asyncio.sleep(60)
+            current_time_str = now.strftime('%H:%M')
+            state_changed = False
+            if current_time_str == '09:00' and not alert_sent_0930:
+                await theme_channel.send("Contest Alert! Halfway through the 'Open Submissions' phase. It's 9:00 AM EST now.")
+                alert_sent_0930 = True
+                state_changed = True
+            elif current_time_str == '17:30' and not alert_sent_1730:
+                await theme_channel.send("LAST CALL! 30 minutes until we stop accepting new submissions! It's 5:30 PM EST now.\nBetter hurry! ")
+                alert_sent_1730 = True
+                state_changed = True
+            elif current_time_str == '00:00':  
+                alert_sent_0930 = False
+                alert_sent_1730 = False
+                downtime_message_sent = False
+                state_changed = True
+
+            if state_changed:
+                state_str = f"{int(alert_sent_0930)},{int(alert_sent_1730)},{int(downtime_message_sent)}"
+                async with self.bot.pool.acquire() as connection:
+                    await connection.execute('INSERT INTO tasks (contests_state, contests_time) VALUES ($1, $2)', state_str, int(now.timestamp()))
+
+            await asyncio.sleep(55)  # Shortened to 55 seconds
 
 
     async def count_votes(self):
