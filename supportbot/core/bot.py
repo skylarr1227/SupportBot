@@ -14,7 +14,6 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
-from opentelemetry.instrumentation.asyncio import AsyncioInstrumentor
 
 trace.set_tracer_provider(TracerProvider())
 # Initialize Jaeger Exporter
@@ -25,8 +24,8 @@ jaeger_exporter = JaegerExporter(
 trace.get_tracer_provider().add_span_processor(
     BatchSpanProcessor(jaeger_exporter)
 )
-# Enable Automatic Instrumentation for asyncio
-AsyncioInstrumentor().instrument()
+
+
 load_dotenv()
 
 TOKEN = os.environ.get("TOKEN") # this is the bot token
