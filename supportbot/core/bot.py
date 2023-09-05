@@ -24,7 +24,7 @@ jaeger_exporter = JaegerExporter(
 trace.get_tracer_provider().add_span_processor(
     BatchSpanProcessor(jaeger_exporter)
 )
-
+tracer = trace.get_tracer(__name__)
 
 load_dotenv()
 
@@ -117,13 +117,14 @@ class SupportBot(commands.AutoShardedBot):
         self.api_url = f"https://{self.domain}.freshdesk.com/api/v2/"
 
     async def create_pool(self):
-        return await asyncpg.create_pool(
-            user=os.environ.get("PGUSER"),
-            password=os.environ.get("PGPASS"),
-            database=os.environ.get("PGDB"),
-            host=os.environ.get("PGHOST")
-            #port=os.environ.get("PGPORT")
-        )
+        with tracer.start_as_current_span("create-pool"):
+            return await asyncpg.create_pool(
+                user=os.environ.get("PGUSER"),
+                password=os.environ.get("PGPASS"),
+                database=os.environ.get("PGDB"),
+                host=os.environ.get("PGHOST")
+                #port=os.environ.get("PGPORT")
+            )
 
     async def create_notion_client(self):
         try:
