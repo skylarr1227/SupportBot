@@ -10,6 +10,23 @@ import openai
 from notion_client import AsyncClient
 from supportbot.core.utils import team
 import asyncpg
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.instrumentation.asyncio import AsyncioInstrumentor
+
+trace.set_tracer_provider(TracerProvider())
+# Initialize Jaeger Exporter
+jaeger_exporter = JaegerExporter(
+    agent_host_name="localhost",
+    agent_port=4317,
+)
+trace.get_tracer_provider().add_span_processor(
+    BatchSpanProcessor(jaeger_exporter)
+)
+# Enable Automatic Instrumentation for asyncio
+AsyncioInstrumentor().instrument()
 load_dotenv()
 
 TOKEN = os.environ.get("TOKEN") # this is the bot token
