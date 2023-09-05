@@ -14,18 +14,17 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 
 trace.set_tracer_provider(TracerProvider())
 # Initialize Jaeger Exporter
-exporter = OTLPSpanExporter(
-    endpoint="tempo-prod-04-prod-us-east-0.grafana.net:443",
-    headers={"Authorization": "Basic 686028:glc_eyJvIjoiOTM4NTU1IiwibiI6Im9wZW50ZWxlIiwiayI6IjZRWjQ2N0poM04yRkdDRW1IUHh5NzUxNyIsIm0iOnsiciI6InByb2QtdXMtZWFzdC0wIn1"}
+jaeger_exporter = JaegerExporter(
+    agent_host_name="localhost",
+    agent_port=4317,
 )
 trace.get_tracer_provider().add_span_processor(
     BatchSpanProcessor(jaeger_exporter)
 )
-tracer = trace.get_tracer(__name__)
+
 
 load_dotenv()
 
