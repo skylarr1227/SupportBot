@@ -4,6 +4,15 @@ from datetime import datetime
 import discord
 import asyncio
 import postgrest.exceptions
+import logging
+try:
+    from discord.ext.prometheus import PrometheusCog, PrometheusLoggingHandler
+    logging.getLogger().addHandler(PrometheusLoggingHandler())
+except ModuleNotFoundError as e:
+    print(e)
+
+
+
 
 class UserMetricsCog(commands.Cog):
     def __init__(self, bot):
@@ -185,4 +194,8 @@ class UserMetricsCog(commands.Cog):
             await ctx.send(f"Error retrieving summary metrics: {e}")
 
 async def setup(bot):
+    try:
+        await bot.add_cog(PrometheusCog(bot, port=9999))
+    except Exception as e:
+        print(e)
     await bot.add_cog(UserMetricsCog(bot))
