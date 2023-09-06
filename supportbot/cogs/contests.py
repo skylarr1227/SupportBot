@@ -10,7 +10,7 @@ import os
 import logging
 import asyncpg
 import random
-import time
+import time as _time
 from opentelemetry import trace
 tracer = trace.get_tracer(__name__)
 
@@ -133,26 +133,33 @@ class Contests(commands.Cog):
     @commands.command(name='cinfo')
     async def contest_stats(self, ctx):
         now = datetime.now(timezone('US/Eastern'))
-        epoch_now = int(time.mktime(now.timetuple()))
-        # Calculate the end time for each phase
-        end_in_progress = datetime(now.year, now.month, now.day, 20, 0, tzinfo=timezone('US/Eastern'))
-        end_voting = datetime(now.year, now.month, now.day, 21, 0, tzinfo=timezone('US/Eastern'))
-        end_downtime = datetime(now.year, now.month, now.day, 23, 59, 59, tzinfo=timezone('US/Eastern')) + timedelta(seconds=1)
+        
+        # Create datetime objects for the end of each phase today
+        end_in_progress = now.replace(hour=17, minute=59, second=59, microsecond=999999)
+        end_voting = now.replace(hour=18, minute=59, second=59, microsecond=999999)
+        end_downtime = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
         # Convert to epoch
-        epoch_end_in_progress = int(time.mktime(end_in_progress.timetuple()))
-        epoch_end_voting = int(time.mktime(end_voting.timetuple()))
-        epoch_end_downtime = int(time.mktime(end_downtime.timetuple()))
-        # Determine the current phase
+        epoch_end_in_progress = int(_time.mktime(end_in_progress.timetuple()))
+        epoch_end_voting = int(_time.mktime(end_voting.timetuple()))
+        epoch_end_downtime = int(_time.mktime(end_downtime.timetuple()))
+        
+        # Determine the current phase and its epoch end time
         current_phase = None
-        if 0 <= now.hour < 20:
-            current_phase = f"In Progress (Ends in <t:{int(epoch_end_in_progress)}:R>)"
-        elif now.hour == 20:
-            current_phase = f"Voting (Ends in <t:{int(epoch_end_voting)}:R>)"
+        epoch_end = None
+        if 0 <= now.hour < 18:
+            current_phase = "In Progress"
+            epoch_end = epoch_end_in_progress
+        elif 18 <= now.hour < 19:
+            current_phase = "Voting"
+            epoch_end = epoch_end_voting
         else:
-            current_phase = f"Downtime (Ends in <t:{int(epoch_end_downtime)}:R>)"
+            current_phase = "Downtime"
+            epoch_end = epoch_end_downtime
+        
         embed = discord.Embed(
-            title=f"Contest Stats",
-            description=f"Current Phase: {current_phase}\n\nOverview/times\nEnd of In-Progress Phase: <t:{int(epoch_end_in_progress)}:R>\nEnd of Voting Phase: <t:{int(epoch_end_voting)}:R>\nEnd of Downtime: <t:{int(epoch_end_downtime)}:R>",
+            title="Contest Stats",
+            description=f"# Current Phase:\n {current_phase} (Ends at <t:{epoch_end}:R>)\n\n### Overview/Times\n- End of In-Progress Phase: <t:{epoch_end_in_progress}:R>\n- End of Voting Phase: <t:{epoch_end_voting}:R>\n- End of Downtime: <t:{epoch_end_downtime}:R>",
             color=random.randint(0, 0xFFFFFF)
         )
         await ctx.send(embed=embed)
@@ -163,26 +170,27 @@ class Contests(commands.Cog):
         user_id = ctx.author.id
         async with self.bot.pool.acquire() as connection:
             row = await connection.fetchrow('SELECT xp, level FROM users WHERE u_id = $1', user_id)
-
+    
             if row:
+                # Calculate the level based on the XP
                 xp = row['xp']
-                level = row['level']
-                if xp == 0:
-                    percentage = 0
-                else:
-                    xp_next_level = 100 * (level + 1)
-                    percentage = (xp - (100 * level)) * 10 // (xp_next_level - (100 * level))
-
+                level = xp // 100  # 100 XP needed for each level
+    
+                # Calculate the percentage progress to the next level
+                remaining_xp = xp % 100  # XP remaining to reach the next level
+                percentage = int((remaining_xp / 100) * 100)  # Percentage of progress to next level
+    
                 progress_bar_str = generate_progress_bar(percentage)
                 embed = discord.Embed(
                     title=f"XP and Level Info for {ctx.author.name}",
                     description=f"Current Level: {level}\n{progress_bar_str}",
-                    color=random.randint(0, 0xFFFFFF)  
+                    color=random.randint(0, 0xFFFFFF)
                 )
                 await ctx.send(embed=embed)
             else:
                 await connection.execute('INSERT INTO users(u_id, xp, level) VALUES($1, $2, $3)', user_id, 0, 0)
                 await ctx.send("Welcome! You have been added to the system. You are at level 0 with 0 XP.")
+    
 
 
     async def get_theme(self, target_date=None):
