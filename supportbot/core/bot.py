@@ -117,7 +117,6 @@ class SupportBot(commands.AutoShardedBot):
         self.api_url = f"https://{self.domain}.freshdesk.com/api/v2/"
 
     async def create_pool(self):
-        with tracer.start_as_current_span("create-pool"):
             return await asyncpg.create_pool(
                 user=os.environ.get("PGUSER"),
                 password=os.environ.get("PGPASS"),
