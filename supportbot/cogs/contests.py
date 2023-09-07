@@ -147,10 +147,10 @@ class Contests(commands.Cog):
         # Determine the current phase and its epoch end time
         current_phase = None
         epoch_end = None
-        if 0 <= now.hour < 19:
+        if 0 <= now.hour < 20:
             current_phase = "In Progress"
             epoch_end = epoch_end_in_progress
-        elif 19 <= now.hour < 20:
+        elif 20 <= now.hour < 21:
             current_phase = "Voting"
             epoch_end = epoch_end_voting
         else:
@@ -229,11 +229,11 @@ class Contests(commands.Cog):
                 await self.phase_message.edit(content=f"{phase}")
                 await asyncio.sleep(60)  # Wait for a minute before moving to the next phase
 
-            if 0 <= now.hour < 19:  # 12:00am - 5:59pm
+            if 0 <= now.hour < 20:  # 12:00am - 5:59pm
                 phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"
                 self.accepting_images = True
                 self.STARTED = now
-            elif 19 <= now.hour < 20:  # 6:00pm - 6:59pm
+            elif 20 <= now.hour < 21:  # 6:00pm - 6:59pm
                 phase = "<:vote:1146208634322296923>"
                 self.accepting_images = False
             else:  # 7:00pm - 11:59pm
