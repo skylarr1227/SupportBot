@@ -256,7 +256,7 @@ class Contests(commands.Cog):
         await message.add_reaction("👍")
         async with self.bot.pool.acquire() as connection:
             #first_attachment_url = message.attachments[0].url     
-            await connection.execute('UPDATE artwork SET message_id = $1, link = 3$ WHERE submitted_by = $2', message.id, user_id, image_url)
+            await connection.execute('UPDATE artwork SET message_id = $1, link = $3 WHERE submitted_by = $2', message.id, user_id, image_url)
 
 
 
