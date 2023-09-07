@@ -255,8 +255,8 @@ class Contests(commands.Cog):
         message = await channel.send(f'<@{user_id}>', embed=discord.Embed(description=f"{user_id}").set_image(url=image_url))
         await message.add_reaction("👍")
         async with self.bot.pool.acquire() as connection:
-            first_attachment_url = message.attachments[0].url     
-            await connection.execute('UPDATE artwork SET message_id = $1, link = 3$ WHERE submitted_by = $2', message.id, user_id, first_attachment_url)
+            #first_attachment_url = message.attachments[0].url     
+            await connection.execute('UPDATE artwork SET message_id = $1, link = 3$ WHERE submitted_by = $2', message.id, user_id, image_url)
 
 
 
@@ -309,7 +309,12 @@ class Contests(commands.Cog):
                 async with self.bot.pool.acquire() as connection:
                     if str(payload.emoji) == "👍":
                         # APPROVE
-                        await self.post_image(user_id, message.embeds[0].image.url)
+                        if message.embeds and message.embeds[0].image:
+                            embed_image_url = message.embeds[0].image.url
+                            await self.post_image(user_id, embed_image_url)
+                        else:
+                            print("No embeds found or no image URL in the first embed.")
+                        
                         await connection.execute('UPDATE artwork SET inspected_by = $1 WHERE submitted_by = $2', inspector_id, user_id)
                         await logging_channel.send(f"👍 <@{user_id}>, your image has been approved!")
                     elif str(payload.emoji) == "👎":
