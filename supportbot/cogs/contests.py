@@ -317,8 +317,7 @@ class Contests(commands.Cog):
         channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID)
         message = await channel.send(f'<@{user_id}>', embed=discord.Embed(description=f"{user_id}").set_image(url=image_url))
         await message.add_reaction("👍")
-        async with self.bot.pool.acquire() as connection:
-            #first_attachment_url = message.attachments[0].url     
+        async with self.bot.pool.acquire() as connection:    
             await connection.execute('UPDATE artwork SET message_id = $1, link = $3 WHERE submitted_by = $2', message.id, user_id, image_url)
 
     
