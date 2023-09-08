@@ -62,7 +62,6 @@ class Contests(commands.Cog):
         self.tasks.append(self.bot.loop.create_task(self.check_time()))
         self.tasks.append(self.bot.loop.create_task(self.count_votes()))
 
-
     def cog_unload(self):
         with tracer.start_as_current_span("check-time"):
             if self.theme_message:
@@ -70,11 +69,75 @@ class Contests(commands.Cog):
                 loop.create_task(self.edit_theme_message())
             for task in self.tasks:
                 task.cancel()
-   
+
+    ### Submission and Inspection listeners
+    
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if isinstance(message.channel, discord.DMChannel) and len(message.attachments) > 0:
+            user_id = message.author.id
+            async with self.bot.pool.acquire() as connection:
+                # Check if the user exists in the users table
+                row = await connection.fetchrow('SELECT * FROM users WHERE u_id = $1', user_id)
+                if not row:
+                    await connection.execute('INSERT INTO users(u_id, xp, level) VALUES($1, $2, $3)', user_id, 0, 0)
+                now = datetime.now(timezone('US/Eastern'))
+                current_contest_start_time = now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+                
+                # Check if the user has already submitted an image for the current contest
+                row = await connection.fetchrow('SELECT submitted_by FROM artwork WHERE submitted_by = $1 AND submitted_on >= $2', user_id, current_contest_start_time)
+                if row:
+                    await message.author.send('You have already submitted an image for the current contest. Only one submission is allowed.')
+                    return
+                # Insert a new artwork submission
+                reply = await message.reply("Do you want to submit this image for the daily contest? (yes/no)")
+                def check(m):
+                    return m.author == message.author and m.channel == message.channel and m.content.lower() in ["yes", "no"]
+                try:
+                    reply = await self.bot.wait_for('message', check=check, timeout=60.0)
+                except asyncio.TimeoutError:
+                    await message.author.send('Sorry, you took too long to reply.')
+                else:
+                    if reply.content.lower() == 'yes' and self.accepting_images:
+                        await connection.execute('INSERT INTO artwork(submitted_by, submitted_on, message_id, upvotes, inspected_by) VALUES($1, $2, $3, $4, $5)', user_id, int(now.timestamp()), None, 0, None)
+                        await connection.execute('UPDATE users SET submitted = $1 WHERE u_id = $2', int(now.timestamp()), user_id)
+                        await self.inspect_image(user_id, message.attachments[0].url)
+                        await message.author.send('Your image has been submitted for manual inspection.')
+                    elif reply.content.lower() == 'no':
+                        await message.author.send('Okay, your image was not submitted.')
+            
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        if payload.user_id == 1082909042944524308:
+            return
+        if payload.channel_id == INSPECTION_CHANNEL_ID:
+            channel = self.bot.get_channel(payload.channel_id)
+            message = await channel.fetch_message(payload.message_id)
+            logging_channel = self.bot.get_channel(LOGGING_CHANNEL_ID)
+            if message.embeds and message.embeds[0].description:
+                user_id = int(message.embeds[0].description)
+                inspector_id = payload.user_id 
+                async with self.bot.pool.acquire() as connection:
+                    if str(payload.emoji) == "👍":
+                        # APPROVE
+                        if message.embeds and message.embeds[0].image:
+                            embed_image_url = message.embeds[0].image.url
+                            await self.post_image(user_id, embed_image_url)
+                        else:
+                            print("No embeds found or no image URL in the first embed.")
+                        
+                        await connection.execute('UPDATE artwork SET inspected_by = $1 WHERE submitted_by = $2', inspector_id, user_id)
+                        await logging_channel.send(f"👍 <@{user_id}>, your image has been approved!")
+                    elif str(payload.emoji) == "👎":
+                        # DENY
+                        await connection.execute('DELETE FROM artwork WHERE submitted_by = $1', user_id)
+                        await logging_channel.send(f"👎 <@{user_id}>, your image has been denied.")
+                    # Clear the reactions after inspection
+                    await message.clear_reactions()
 
 
     
-
 
     async def edit_theme_message(self):
         embed = self.theme_message.embeds[0]
@@ -219,6 +282,7 @@ class Contests(commands.Cog):
         except Exception as e:
             print(f"Failed to initialize contest: {e}")  
 
+    
     async def update_phase(self):
         now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
         if self.previous_phase == "In Progress" and now.hour == 0:
@@ -241,15 +305,14 @@ class Contests(commands.Cog):
         if self.phase_message:
             await self.phase_message.edit(content=f"{phase}")  # Update the phase message
 
-
-
-
+    
     async def inspect_image(self, user_id, image_url):
         channel = self.bot.get_channel(INSPECTION_CHANNEL_ID)
         message = await channel.send(embed=discord.Embed(description=f"{user_id}").set_image(url=image_url))
         await message.add_reaction("👍")
         await message.add_reaction("👎")
 
+    
     async def post_image(self, user_id, image_url):
         channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID)
         message = await channel.send(f'<@{user_id}>', embed=discord.Embed(description=f"{user_id}").set_image(url=image_url))
@@ -258,71 +321,7 @@ class Contests(commands.Cog):
             #first_attachment_url = message.attachments[0].url     
             await connection.execute('UPDATE artwork SET message_id = $1, link = $3 WHERE submitted_by = $2', message.id, user_id, image_url)
 
-
-
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        if isinstance(message.channel, discord.DMChannel) and len(message.attachments) > 0:
-            user_id = message.author.id
-            async with self.bot.pool.acquire() as connection:
-                # Check if the user exists in the users table
-                row = await connection.fetchrow('SELECT * FROM users WHERE u_id = $1', user_id)
-                if not row:
-                    await connection.execute('INSERT INTO users(u_id, xp, level) VALUES($1, $2, $3)', user_id, 0, 0)
-                now = datetime.now(timezone('US/Eastern'))
-                current_contest_start_time = now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
-                
-                # Check if the user has already submitted an image for the current contest
-                row = await connection.fetchrow('SELECT submitted_by FROM artwork WHERE submitted_by = $1 AND submitted_on >= $2', user_id, current_contest_start_time)
-                if row:
-                    await message.author.send('You have already submitted an image for the current contest. Only one submission is allowed.')
-                    return
-                # Insert a new artwork submission
-                reply = await message.reply("Do you want to submit this image for the daily contest? (yes/no)")
-                def check(m):
-                    return m.author == message.author and m.channel == message.channel and m.content.lower() in ["yes", "no"]
-                try:
-                    reply = await self.bot.wait_for('message', check=check, timeout=60.0)
-                except asyncio.TimeoutError:
-                    await message.author.send('Sorry, you took too long to reply.')
-                else:
-                    if reply.content.lower() == 'yes' and self.accepting_images:
-                        await connection.execute('INSERT INTO artwork(submitted_by, submitted_on, message_id, upvotes, inspected_by) VALUES($1, $2, $3, $4, $5)', user_id, int(now.timestamp()), None, 0, None)
-                        await connection.execute('UPDATE users SET submitted = $1 WHERE u_id = $2', int(now.timestamp()), user_id)
-                        await self.inspect_image(user_id, message.attachments[0].url)
-                        await message.author.send('Your image has been submitted for manual inspection.')
-                    elif reply.content.lower() == 'no':
-                        await message.author.send('Okay, your image was not submitted.')
-            
-
-    @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
-        if payload.user_id == 1082909042944524308:
-            return
-        if payload.channel_id == INSPECTION_CHANNEL_ID:
-            channel = self.bot.get_channel(payload.channel_id)
-            message = await channel.fetch_message(payload.message_id)
-            logging_channel = self.bot.get_channel(LOGGING_CHANNEL_ID)
-            if message.embeds and message.embeds[0].description:
-                user_id = int(message.embeds[0].description)
-                inspector_id = payload.user_id 
-                async with self.bot.pool.acquire() as connection:
-                    if str(payload.emoji) == "👍":
-                        # APPROVE
-                        if message.embeds and message.embeds[0].image:
-                            embed_image_url = message.embeds[0].image.url
-                            await self.post_image(user_id, embed_image_url)
-                        else:
-                            print("No embeds found or no image URL in the first embed.")
-                        
-                        await connection.execute('UPDATE artwork SET inspected_by = $1 WHERE submitted_by = $2', inspector_id, user_id)
-                        await logging_channel.send(f"👍 <@{user_id}>, your image has been approved!")
-                    elif str(payload.emoji) == "👎":
-                        # DENY
-                        await connection.execute('DELETE FROM artwork WHERE submitted_by = $1', user_id)
-                        await logging_channel.send(f"👎 <@{user_id}>, your image has been denied.")
-                    # Clear the reactions after inspection
-                    await message.clear_reactions()
+    
 
 
 
