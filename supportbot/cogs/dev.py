@@ -71,12 +71,12 @@ class Dev(commands.Cog):
 
 
     @team()
-    @commands.command(name="list_tasks")
-    async def list_tasks(self, ctx, page: int = 0):
+    @commands.command(name="links")
+    async def links(self, ctx, page: int = 0):
         """Fetches a list of tasks and displays them in a paginated format."""
         async with self.bot.pool.acquire() as connection:
             rows = await connection.fetch('SELECT task_id, name FROM art WHERE name IS NOT NULL')
-    
+
         pages = []
         for i in range(0, len(rows), 10):  # Assuming you want 10 items per page
             embed = discord.Embed(title="Tasks List", color=discord.Color.blue())
@@ -85,7 +85,7 @@ class Dev(commands.Cog):
                 name = row['name']
                 embed.add_field(name=f"https://dream.ai/listing/{task_id}", value=f"- {name}", inline=False)
             pages.append(embed)
-    
+
         # Check if the page number is valid
         if 0 <= page < len(pages):
             await self.paginate(ctx, pages, page - 1)  # -1 because list index starts from 0
