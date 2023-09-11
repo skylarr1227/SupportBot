@@ -50,7 +50,7 @@ def generate_progress_bar(percentage):
 class Contests(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        Counter, Gauge, Summary, Enum, Info = self.STATS
+        
         self.debug = True
         self.time_offset = 0
         self.accepting_images = True
