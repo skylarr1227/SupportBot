@@ -12,21 +12,9 @@ from supportbot.core.utils import team
 import asyncpg
 import discord.ext.prometheus
 from prometheus_client import Counter, Gauge, Summary, Enum, Info
-from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from discord.ext.prometheus import PrometheusCog, PrometheusLoggingHandler
 
-trace.set_tracer_provider(TracerProvider())
-# Initialize Jaeger Exporter
-jaeger_exporter = JaegerExporter(
-    agent_host_name="localhost",
-    agent_port=4317,
-)
-trace.get_tracer_provider().add_span_processor(
-    BatchSpanProcessor(jaeger_exporter)
-)
-
+logging.getLogger().addHandler(PrometheusLoggingHandler())
 
 load_dotenv()
 
@@ -114,8 +102,25 @@ class SupportBot(commands.AutoShardedBot):
         self.OPENAI_KEY = OPENAI_KEY
         self.SPECIFIC_POST_CHANNEL_ID = 1102722546232729620
         #self.openai = openai.api_key
-        self.domain = FRESHDESK_DOMAIN
-        self.api_url = f"https://{self.domain}.freshdesk.com/api/v2/"
+        
+        self.SUBMITTED_TRACK = Gauge('image_submissions', 'Number of image submissions for the daily contest')
+        self.TOTAL_CONTESTS = Counter('contest_total', 'Total number of contests held')
+        self.TOTAL_SPECIAL_CONTESTS = Counter('contest_total_special', 'Total number of special contests held')
+        self.TOTAL_VOTES_CAST = Counter('contest_total_votes_cast', 'Total number of votes cast during contests')
+        self.TOTAL_SUBMISSIONS = Counter('contest_total_submissions', 'Total number of submissions for each contest')
+        self.ACTIVE_USERS = Gauge('contest_active_users', 'Number of users active during a contest')
+        self.ALERTS_SENT = Counter('contest_alerts_sent', 'Number of alerts sent by the bot')
+        
+        self.messages_per_user_counter = Counter('discord_messages_per_user', 'Number of messages per user', ['user'])
+        self.messages_per_channel_counter = Counter('discord_messages_per_channel', 'Number of messages per channel', ['channel'])
+        self.active_users_gauge = Gauge('discord_active_users', 'Number of active users')
+        self.new_users_counter = Counter('discord_new_users', 'Number of new users')
+        self.users_leaving_counter = Counter('discord_users_leaving', 'Number of users leaving')
+        self.messages_per_channel_per_day_counter = Counter('discord_messages_per_channel_per_day', 'Number of messages per day per channel', ['channel', 'date'])
+        self.unique_users_per_channel_counter = Counter('discord_unique_users_per_channel', 'Number of unique users per channel', ['channel'])
+        self.replies_per_user_counter = Counter('discord_replies_per_user', 'Number of replies per user', ['user'])
+
+
 
     async def create_pool(self):
             return await asyncpg.create_pool(
@@ -128,6 +133,11 @@ class SupportBot(commands.AutoShardedBot):
 
     async def _setup_hook(self):
         self.db = await self.create_pool()
+        try:
+            await self.add_cog(PrometheusCog(self, port=9999))
+        except Exception as e:
+            print(e)
+    
         
 
     async def analyze_sentiment_and_participation(self, thread_id):

@@ -5,25 +5,9 @@ import discord
 import asyncio
 import postgrest.exceptions
 import logging
-from prometheus_client import Counter, Gauge
-try:
-    from discord.ext.prometheus import PrometheusCog, PrometheusLoggingHandler
-    logging.getLogger().addHandler(PrometheusLoggingHandler())
-except ModuleNotFoundError as e:
-    print(e)
 
-#messages_per_user_counter = Counter('discord_messages_per_user', 'Number of messages per user', ['user'])
-#messages_per_channel_counter = Counter('discord_messages_per_channel', 'Number of messages per channel', ['channel'])
-active_users_gauge = Gauge('discord_active_users', 'Number of active users')
-new_users_counter = Counter('discord_new_users', 'Number of new users')
-users_leaving_counter = Counter('discord_users_leaving', 'Number of users leaving')
 
-# Channel Activity Metrics
-messages_per_channel_per_day_counter = Counter('discord_messages_per_channel_per_day', 'Number of messages per day per channel', ['channel', 'date'])
-unique_users_per_channel_counter = Counter('discord_unique_users_per_channel', 'Number of unique users per channel', ['channel'])
 
-# User Engagement Metrics
-replies_per_user_counter = Counter('discord_replies_per_user', 'Number of replies per user', ['user'])
 
 
 class UserMetricsCog(commands.Cog):
@@ -31,7 +15,6 @@ class UserMetricsCog(commands.Cog):
         self.bot = bot
       
         
-
     async def update_metrics(self, user_id, metrics):
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(None, lambda: self.bot.supabase.table('user_metrics').upsert({'user_id': user_id, 'metrics': metrics}).execute())
@@ -61,14 +44,14 @@ class UserMetricsCog(commands.Cog):
         if message.guild.id == 774124295026376755:
             if message.author.bot:
                 return
-            messages_per_user_counter.labels(user=str(message.author.id)).inc()
-            messages_per_channel_counter.labels(channel=message.channel.name).inc()
+            self.bot.messages_per_user_counter.labels(user=str(message.author.id)).inc()
+            self.bot.messages_per_channel_counter.labels(channel=message.channel.name).inc()
             # Channel Activity Metrics
-            messages_per_channel_per_day_counter.labels(channel=message.channel.name, date=datetime.today().strftime('%Y-%m-%d')).inc()
-            unique_users_per_channel_counter.labels(channel=message.channel.name).inc()
+            self.bot.messages_per_channel_per_day_counter.labels(channel=message.channel.name, date=datetime.today().strftime('%Y-%m-%d')).inc()
+            self.bot.unique_users_per_channel_counter.labels(channel=message.channel.name).inc()
             # User Engagement Metrics
             if message.reference:
-                replies_per_user_counter.labels(user=str(message.author.id)).inc()
+                self.bot.replies_per_user_counter.labels(user=str(message.author.id)).inc()
         if message.guild.id != 914705867855773746 or message.author.bot:
             return
         # Retrieve existing metrics or initialize
@@ -121,14 +104,14 @@ class UserMetricsCog(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member):
         if member.guild.id == 774124295026376755:
-            active_users_gauge.inc()
-            new_users_counter.inc()
+            self.bot.active_users_gauge.inc()
+            self.bot.new_users_counter.inc()
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
         if member.guild.id == 774124295026376755:
-            active_users_gauge.dec()
-            users_leaving_counter.inc()
+            self.bot.active_users_gauge.dec()
+            self.bot.users_leaving_counter.inc()
 
 
     async def get_or_create_metrics(self, user_id):
@@ -233,8 +216,4 @@ class UserMetricsCog(commands.Cog):
             await ctx.send(f"Error retrieving summary metrics: {e}")
 
 async def setup(bot):
-    try:
-        await bot.add_cog(PrometheusCog(bot, port=9999))
-    except Exception as e:
-        print(e)
     await bot.add_cog(UserMetricsCog(bot))

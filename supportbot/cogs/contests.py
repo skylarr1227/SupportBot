@@ -6,15 +6,12 @@ from discord.ext import commands
 import discord
 import functools
 from supportbot.core.utils import team
+from supportbot.core.bot import team
 import os
 import logging
 import asyncpg
 import random
 import time as _time
-
-from opentelemetry import trace
-
-
 
 
 logger = logging.getLogger('discord')
@@ -31,6 +28,7 @@ XP_AWARDS = [50, 40, 30, 20, 10] # XP for 1st to 5th places
 STRIPE_AUTH = os.environ.get("STRIPE_AUTH")
 if STRIPE_AUTH is None:
     logger.error("The STRIPE_AUTH environment variable is missing!\nStripe coupon codes will not be generated until this is corrected in the .env file!")
+
 
 
 
@@ -52,7 +50,7 @@ def generate_progress_bar(percentage):
 class Contests(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        Counter, Gauge, Summary, Enum, Info = self.bot.STATS
+        Counter, Gauge, Summary, Enum, Info = self.STATS
         self.debug = True
         self.time_offset = 0
         self.accepting_images = True
@@ -66,13 +64,7 @@ class Contests(commands.Cog):
         self.tasks.append(self.bot.loop.create_task(self.initialize_contest()))
         self.tasks.append(self.bot.loop.create_task(self.check_time()))
         self.tasks.append(self.bot.loop.create_task(self.count_votes()))
-        self.SUBMITTED_TRACK = Gauge('image_submissions', 'Number of image submissions for the daily contest')
-        TOTAL_CONTESTS = Counter('contest_total', 'Total number of contests held')
-        TOTAL_SPECIAL_CONTESTS = Counter('contest_total_special', 'Total number of special contests held')
-        TOTAL_VOTES_CAST = Counter('contest_total_votes_cast', 'Total number of votes cast during contests')
-        TOTAL_SUBMISSIONS = Counter('contest_total_submissions', 'Total number of submissions for each contest')
-        ACTIVE_USERS = Gauge('contest_active_users', 'Number of users active during a contest')
-        ALERTS_SENT = Counter('contest_alerts_sent', 'Number of alerts sent by the bot')
+        
 
     ### Helper Functions
     
@@ -336,10 +328,14 @@ class Contests(commands.Cog):
                 theme = await self.get_theme()
                 day_of_week = calendar.day_name[now.weekday()].capitalize()
                 embed_title = f"{day_of_week}'s Contest of week {current_week}"
+
+                # Create the embed object
+                embed = discord.Embed(title=embed_title, description=theme, color=0x3498db) # Color can be changed to your preference
+            
                 # If it's a special contest day, modify the title and create or fetch the special channel
                 if is_special_week:
                     embed_title = f"Special {embed_title}"
-                    category = discord.utils.get(self.bot.get_all_channels(), id=YOUR_CATEGORY_ID) 
+                    category = discord.utils.get(self.bot.get_all_channels(), id=1148811216312090684) 
                     special_channel_name = f"special-contest-{current_week}"
                     special_channel = discord.utils.get(category.text_channels, name=special_channel_name)
                     if not special_channel:
