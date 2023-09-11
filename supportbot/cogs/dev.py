@@ -79,9 +79,9 @@ class Dev(commands.Cog):
             rows = await connection.fetch('SELECT task_id, name FROM art WHERE name IS NOT NULL')
 
         pages = []
-        for i in range(0, len(rows), 50):  # Assuming you want 10 items per page
+        for i in range(0, len(rows), 30):  # Assuming you want 10 items per page
             description = ""
-            for row in rows[i:i+50]:
+            for row in rows[i:i+30]:
                 task_id = row['task_id']
                 name = row['name']
                 description += f"https://dream.ai/listing/{task_id} - {name}\n"
