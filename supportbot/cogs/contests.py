@@ -380,6 +380,7 @@ class Contests(commands.Cog):
             elif now.weekday() == 6:  # Sunday
                 current_phase = "<:down3:1146208635953873016><:down2:1146208638843748372>"  # Downtime
                 self.accepting_images = False
+        ### Regular Week Schedule 
         else:
             if now.weekday() == 0:  # Monday
                 if 0 <= now.hour < 24:  # 12:00am - 11:59pm

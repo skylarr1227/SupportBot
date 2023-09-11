@@ -12,7 +12,7 @@ try:
 except ModuleNotFoundError as e:
     print(e)
 
-messages_per_user_counter = Counter('discord_messages_per_user', 'Number of messages per user', ['user'])
+#messages_per_user_counter = Counter('discord_messages_per_user', 'Number of messages per user', ['user'])
 messages_per_channel_counter = Counter('discord_messages_per_channel', 'Number of messages per channel', ['channel'])
 active_users_gauge = Gauge('discord_active_users', 'Number of active users')
 new_users_counter = Counter('discord_new_users', 'Number of new users')
