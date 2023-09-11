@@ -29,11 +29,7 @@ replies_per_user_counter = Counter('discord_replies_per_user', 'Number of replie
 class UserMetricsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-      # The `start_http_server(9999)` function is starting an HTTP server on port 9999. This server is
-      # used for exposing Prometheus metrics. Prometheus is a monitoring and alerting toolkit that is
-      # commonly used for collecting and analyzing metrics from various systems. By starting the HTTP
-      # server, the code is making the metrics collected by the bot available for scraping by
-      # Prometheus.
+      
         
 
     async def update_metrics(self, user_id, metrics):

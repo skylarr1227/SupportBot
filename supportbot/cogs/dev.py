@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, menus
 from supportbot.core.utils import team
 import os
 import aiohttp
@@ -8,11 +8,34 @@ import asyncio
 from io import StringIO
 import sys
 import traceback
+
+from discord import Embed
+
+
 GREEN = "\N{LARGE GREEN CIRCLE}"
 API_PASS = os.environ.get("API_PASS")
 API_LINK = os.environ.get("API_LINK")
 OS = discord.Object(id=774124295026376755)
+BASE_URL = "https://dream.ai/listing/"
 
+class TaskMenu(menus.ListPageSource):
+    def __init__(self, data):
+        super().__init__(data, per_page=30)  
+
+    async def format_page(self, menu, entries):
+        offset = menu.current_page * self.per_page
+        embed = Embed(title="Task Listings", colour=0x3498db)
+        for index, entry in enumerate(entries, start=offset):
+            url = BASE_URL + str(entry['task_id'])
+            if entry['name']:
+                embed.add_field(name=f"Task {index + 1}: {entry['name']}", value=url, inline=False)
+            else:
+                embed.add_field(name=f"Task {index + 1}", value=url, inline=False)
+        return embed
+
+
+
+    
 class Dev(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -44,6 +67,29 @@ class Dev(commands.Cog):
             except asyncio.TimeoutError:
                 await msg.clear_reactions()
                 break
+
+
+
+
+
+
+
+    @commands.command()
+    async def list_tasks(self, ctx):
+        """List all tasks with links and names."""
+        async with self.bot.pool.acquire() as connection:
+            rows = await connection.fetch('SELECT task_id, name FROM art WHERE name IS NOT NULL')
+        if not rows:
+            return await ctx.send("No tasks found!")
+
+        # Paginate results
+        menu = menus.MenuPages(source=TaskMenu(rows), clear_reactions_after=True)
+        await menu.start(ctx)
+
+
+
+
+
 
     @team()
     @commands.command()

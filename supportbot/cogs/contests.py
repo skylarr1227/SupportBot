@@ -11,8 +11,11 @@ import logging
 import asyncpg
 import random
 import time as _time
+
 from opentelemetry import trace
-tracer = trace.get_tracer(__name__)
+
+
+
 
 logger = logging.getLogger('discord')
 logger.setLevel(logging.ERROR)
@@ -28,6 +31,7 @@ XP_AWARDS = [50, 40, 30, 20, 10] # XP for 1st to 5th places
 STRIPE_AUTH = os.environ.get("STRIPE_AUTH")
 if STRIPE_AUTH is None:
     logger.error("The STRIPE_AUTH environment variable is missing!\nStripe coupon codes will not be generated until this is corrected in the .env file!")
+
 
 
 def generate_progress_bar(percentage):
@@ -48,6 +52,7 @@ def generate_progress_bar(percentage):
 class Contests(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        Counter, Gauge, Summary, Enum, Info = self.bot.STATS
         self.debug = True
         self.time_offset = 0
         self.accepting_images = True
@@ -61,14 +66,83 @@ class Contests(commands.Cog):
         self.tasks.append(self.bot.loop.create_task(self.initialize_contest()))
         self.tasks.append(self.bot.loop.create_task(self.check_time()))
         self.tasks.append(self.bot.loop.create_task(self.count_votes()))
+        self.SUBMITTED_TRACK = Gauge('image_submissions', 'Number of image submissions for the daily contest')
+        TOTAL_CONTESTS = Counter('contest_total', 'Total number of contests held')
+        TOTAL_SPECIAL_CONTESTS = Counter('contest_total_special', 'Total number of special contests held')
+        TOTAL_VOTES_CAST = Counter('contest_total_votes_cast', 'Total number of votes cast during contests')
+        TOTAL_SUBMISSIONS = Counter('contest_total_submissions', 'Total number of submissions for each contest')
+        ACTIVE_USERS = Gauge('contest_active_users', 'Number of users active during a contest')
+        ALERTS_SENT = Counter('contest_alerts_sent', 'Number of alerts sent by the bot')
+
+    ### Helper Functions
+    
+    async def inspect_image(self, user_id, image_url):
+        channel = self.bot.get_channel(INSPECTION_CHANNEL_ID)
+        message = await channel.send(embed=discord.Embed(description=f"{user_id}").set_image(url=image_url))
+        await message.add_reaction("👍")
+        await message.add_reaction("👎")
+
+    
+    async def post_image(self, user_id, image_url):
+        channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID)
+        message = await channel.send(f'<@{user_id}>', embed=discord.Embed(description=f"{user_id}").set_image(url=image_url))
+        await message.add_reaction("👍")
+        async with self.bot.pool.acquire() as connection:    
+            await connection.execute('UPDATE artwork SET message_id = $1, link = $3 WHERE submitted_by = $2', message.id, user_id, image_url)
+    
+
+    async def edit_theme_message(self):
+        embed = self.theme_message.embeds[0]
+        embed.color = 0xFF0000  # Set the color to red
+        await self.theme_message.edit(embed=embed)
+
+    async def purchase_coupon(self, connection, platform):
+        coupon = await connection.fetchrow('SELECT * FROM coupons WHERE platform = $1 AND purchased IS NULL LIMIT 1', platform)
+        if coupon:
+            await connection.execute('UPDATE coupons SET purchased = NOW() WHERE id = $1', coupon['id'])
+            return coupon['code']
+        return None
+
+
+    async def create_special_contest_channel(self):
+        """Creates a new channel for the special contest in the specified category."""
+        guild = self.bot.get_guild(914705867855773746)  
+        category = discord.utils.get(guild.categories, name="Daily Contest Testing")  
+        if not category:
+            return  # Return if the category doesn't exist
+        current_date = datetime.now().date()
+        channel_name = f"special-contest-{current_date}"
+        # Create the channel
+        special_channel = await guild.create_text_channel(channel_name, category=category)
+        # Save the channel ID
+        self.special_channel_id = special_channel.id
+        return special_channel
+
+    async def delete_special_contest_channel(self):
+        """Deletes the special contest channel."""
+        guild = self.bot.get_guild(914705867855773746)  
+        if hasattr(self, 'special_channel_id'):
+            channel = guild.get_channel(self.special_channel_id)
+            if channel:
+                await channel.delete()
+                del self.special_channel_id  
+
+    async def get_theme(self, target_date=None):
+        if target_date is None:
+            target_date = datetime.now(timezone('US/Eastern'))
+        week_of_year = target_date.isocalendar()[1]
+        day_of_week = calendar.day_name[target_date.weekday()].lower()
+        async with self.bot.pool.acquire() as connection:
+            query = f'SELECT {day_of_week} FROM contests WHERE week = $1'
+            row = await connection.fetchrow(query, week_of_year)
+            return row[day_of_week] if row else None
 
     def cog_unload(self):
-        with tracer.start_as_current_span("check-time"):
-            if self.theme_message:
-                loop = asyncio.get_event_loop()
-                loop.create_task(self.edit_theme_message())
-            for task in self.tasks:
-                task.cancel()
+        if self.theme_message:
+            loop = asyncio.get_event_loop()
+            loop.create_task(self.edit_theme_message())
+        for task in self.tasks:
+            task.cancel()
 
     ### Submission and Inspection listeners
     
@@ -100,6 +174,7 @@ class Contests(commands.Cog):
                 else:
                     if reply.content.lower() == 'yes' and self.accepting_images:
                         await connection.execute('INSERT INTO artwork(submitted_by, submitted_on, message_id, upvotes, inspected_by) VALUES($1, $2, $3, $4, $5)', user_id, int(now.timestamp()), None, 0, None)
+                        self.SUBMITTED_TRACK.inc()
                         await connection.execute('UPDATE users SET submitted = $1 WHERE u_id = $2', int(now.timestamp()), user_id)
                         await self.inspect_image(user_id, message.attachments[0].url)
                         await message.author.send('Your image has been submitted for manual inspection.')
@@ -133,24 +208,13 @@ class Contests(commands.Cog):
                         # DENY
                         await connection.execute('DELETE FROM artwork WHERE submitted_by = $1', user_id)
                         await logging_channel.send(f"👎 <@{user_id}>, your image has been denied.")
+                        self.SUBMITTED_TRACK.dec()
                     # Clear the reactions after inspection
                     await message.clear_reactions()
 
 
     
-
-    async def edit_theme_message(self):
-        embed = self.theme_message.embeds[0]
-        embed.color = 0xFF0000  # Set the color to red
-        await self.theme_message.edit(embed=embed)
-
-    async def purchase_coupon(self, connection, platform):
-        coupon = await connection.fetchrow('SELECT * FROM coupons WHERE platform = $1 AND purchased IS NULL LIMIT 1', platform)
-        if coupon:
-            await connection.execute('UPDATE coupons SET purchased = NOW() WHERE id = $1', coupon['id'])
-            return coupon['code']
-        return None
-
+    ### Commands
 
     @team()
     @commands.command(name='setdebug')
@@ -189,8 +253,6 @@ class Contests(commands.Cog):
     async def shop_web(self, ctx):
         await ctx.send(embed=discord.Embed(title="Coming soon", description="Coupon codes for free subscriptions!"))
         pass
-
-
 
 
     @commands.command(name='cinfo')
@@ -256,71 +318,97 @@ class Contests(commands.Cog):
     
 
 
-    async def get_theme(self, target_date=None):
-        with tracer.start_as_current_span("get-theme"):
-            if target_date is None:
-                target_date = datetime.now(timezone('US/Eastern'))
-            week_of_year = target_date.isocalendar()[1]
-            day_of_week = calendar.day_name[target_date.weekday()].lower()
-            async with self.bot.pool.acquire() as connection:
-                query = f'SELECT {day_of_week} FROM contests WHERE week = $1'
-                row = await connection.fetchrow(query, week_of_year)
-                return row[day_of_week] if row else None
+    
+    ### Core functions, for starting, running, and keeping time etc.
+
 
     async def initialize_contest(self):
         try:
             theme_channel = self.bot.get_channel(THEME_CHANNEL_ID)
-            theme = await self.get_theme()
-            now = datetime.now(timezone('US/Eastern'))
-            week_of_year = now.isocalendar()[1]
-            day_of_week = calendar.day_name[now.weekday()].capitalize()
-            embed = discord.Embed(title=f"{day_of_week}'s Contest of week {week_of_year}", description=f"# Today's theme is\n{theme}", color=random.randint(0, 0xFFFFFF))
-            self.theme_message = await theme_channel.send(embed=embed)
+            now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
+            # Fetching the 'is_special_week' value from the database
+            current_week = now.isocalendar()[1]
+            async with self.bot.pool.acquire() as connection:
+                row = await connection.fetchrow('SELECT special FROM contests WHERE week = $1', current_week)
+                is_special_week = row['special'] if row else False
+            # Check if today is a day with a contest
+            if now.weekday() in [0, 2] or (is_special_week and 0 <= now.weekday() < 5):  # Monday, Wednesday, or special contest day
+                theme = await self.get_theme()
+                day_of_week = calendar.day_name[now.weekday()].capitalize()
+                embed_title = f"{day_of_week}'s Contest of week {current_week}"
+                # If it's a special contest day, modify the title and create or fetch the special channel
+                if is_special_week:
+                    embed_title = f"Special {embed_title}"
+                    category = discord.utils.get(self.bot.get_all_channels(), id=YOUR_CATEGORY_ID) 
+                    special_channel_name = f"special-contest-{current_week}"
+                    special_channel = discord.utils.get(category.text_channels, name=special_channel_name)
+                    if not special_channel:
+                        special_channel = await category.create_text_channel(name=special_channel_name)
+
+                    self.theme_message = await special_channel.send(embed=embed)
+                else:
+                    self.theme_message = await theme_channel.send(embed=embed)
+
             self.phase_message = await theme_channel.send("Initializing contest phase...")
             await self.update_phase()
-            print("Contest initialized")  
+            self.TOTAL_CONTESTS.inc()
+            print("Contest initialized")
         except Exception as e:
-            print(f"Failed to initialize contest: {e}")  
+            print(f"Failed to initialize contest: {e}")
+
 
     
     async def update_phase(self):
         now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
-        if self.previous_phase == "In Progress" and now.hour == 0:
-            phase = "Ended or Expired"
-            self.accepting_images = False
-            await self.phase_message.edit(content=f"{phase}")
-            await asyncio.sleep(60)  # Wait for a minute before moving to the next phase
-        # Time frames for each phase
-        if 0 <= now.hour < 21:  # 12:00am - 8:59pm
-            phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"  # In Progress
-            self.accepting_images = True
-            self.STARTED = now
-        elif 21 <= now.hour < 22:  # 9:00pm - 9:59pm
-            phase = "<:vote:1146208634322296923>"  # Voting
-            self.accepting_images = False
-        else:  # 10:00pm - 11:59pm
-            phase = "<:down3:1146208635953873016><:down2:1146208638843748372>"  # Downtime
-            self.accepting_images = False
-        self.previous_phase = phase  # Update the previous_phase variable
+        current_phase = None
+
+        # Fetch the 'is_special_week' value from the database
+        async with self.bot.pool.acquire() as connection:
+            current_week = now.isocalendar()[1]
+            row = await connection.fetchrow('SELECT special FROM contests WHERE week = $1', current_week)
+            is_special_week = row['special'] if row else False
+
+        # If it's a special contest week
+        if is_special_week:
+            if 0 <= now.weekday() < 5:  # Monday to Friday
+                current_phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"  # In Progress
+                self.accepting_images = True
+                self.STARTED = now
+            elif now.weekday() == 5:  # Saturday
+                current_phase = "<:vote:1146208634322296923>"  # Voting
+                self.accepting_images = False
+            elif now.weekday() == 6:  # Sunday
+                current_phase = "<:down3:1146208635953873016><:down2:1146208638843748372>"  # Downtime
+                self.accepting_images = False
+        else:
+            if now.weekday() == 0:  # Monday
+                if 0 <= now.hour < 24:  # 12:00am - 11:59pm
+                    current_phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"  # In Progress
+                    self.accepting_images = True
+                    self.STARTED = now
+            elif now.weekday() == 1:  # Tuesday
+                if 0 <= now.hour < 12:  # 12:00am - 11:59am
+                    current_phase = "<:vote:1146208634322296923>"  # Voting
+                    self.accepting_images = False
+                else:
+                    current_phase = "<:down3:1146208635953873016><:down2:1146208638843748372>"  # Downtime
+                    self.accepting_images = False
+            elif now.weekday() == 2:  # Wednesday
+                if 0 <= now.hour < 24:  # 12:00am - 11:59pm
+                    current_phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"  # In Progress
+                    self.accepting_images = True
+                    self.STARTED = now
+            elif now.weekday() == 3:  # Thursday
+                if 0 <= now.hour < 12:  # 12:00am - 11:59am
+                    current_phase = "<:vote:1146208634322296923>"  # Voting
+                    self.accepting_images = False
+                else:
+                    current_phase = "<:d    own3:1146208635953873016><:down2:1146208638843748372>"  # Downtime
+                    self.accepting_images = False
+
+        # Update the current phase message
         if self.phase_message:
-            await self.phase_message.edit(content=f"{phase}")  # Update the phase message
-
-    
-    async def inspect_image(self, user_id, image_url):
-        channel = self.bot.get_channel(INSPECTION_CHANNEL_ID)
-        message = await channel.send(embed=discord.Embed(description=f"{user_id}").set_image(url=image_url))
-        await message.add_reaction("👍")
-        await message.add_reaction("👎")
-
-    
-    async def post_image(self, user_id, image_url):
-        channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID)
-        message = await channel.send(f'<@{user_id}>', embed=discord.Embed(description=f"{user_id}").set_image(url=image_url))
-        await message.add_reaction("👍")
-        async with self.bot.pool.acquire() as connection:    
-            await connection.execute('UPDATE artwork SET message_id = $1, link = $3 WHERE submitted_by = $2', message.id, user_id, image_url)
-
-    
+            await self.phase_message.edit(content=f"{current_phase}") 
 
 
 
@@ -330,30 +418,51 @@ class Contests(commands.Cog):
         alert_sent_0930 = False
         alert_sent_2100 = False  # Changed to 9 PM
         downtime_message_sent = False
-
+    
         async with self.bot.pool.acquire() as connection:
             row = await connection.fetchrow('SELECT contests_state FROM tasks WHERE contests_time = (SELECT MAX(contests_time) FROM tasks)')
             if row:
                 state_data = row['contests_state']
                 alert_sent_0930, alert_sent_2100, downtime_message_sent = map(bool, map(int, state_data.split(',')))
-
+    
         while True:
             now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
             current_phase = None
-            if 0 <= now.hour < 21:  # 12:00am - 8:59pm
-                current_phase = "In Progress (12:00am - 8:59pm EST)"
-            elif 21 <= now.hour < 22:  # 9:00pm - 9:59pm
-                current_phase = "Voting (9:00pm - 9:59pm EST)"
-            else:  # 10:00pm - 11:59pm
-                current_phase = "Downtime (10:00pm - 11:59pm EST)"
-
+            
+            # Fetching the 'is_special_week' value from the database
+            current_week = now.isocalendar()[1]
+            async with self.bot.pool.acquire() as connection:
+                row = await connection.fetchrow('SELECT special FROM contests WHERE week = $1', current_week)
+                is_special_week = row['special'] if row else False
+    
+            # Time frames for each phase
+            if now.weekday() in [0, 2]:  # Regular contests on Monday and Wednesday
+                if 0 <= now.hour < 21:  # 12:00am - 8:59pm
+                    current_phase = "In Progress (12:00am - 8:59pm EST)"
+                elif 21 <= now.hour < 22:  # 9:00pm - 9:59pm
+                    current_phase = "Voting (9:00pm - 9:59pm EST)"
+                else:  # 10:00pm - 11:59pm
+                    current_phase = "Downtime (10:00pm - 11:59pm EST)"
+            elif is_special_week and 0 <= now.weekday() < 5:  # Special contest from Monday to Friday
+                if 0 <= now.hour < 24:  # 12:00am - 11:59pm
+                    current_phase = "Special Contest In Progress (12:00am - 11:59pm EST)"
+            elif is_special_week and now.weekday() == 5:  # Special contest voting phase on Saturday
+                current_phase = "Special Contest Voting (Whole Day)"
+            elif is_special_week and now.weekday() == 6:  # Special contest downtime on Sunday
+                current_phase = "Special Contest Downtime (Whole Day)"
+            # Else, there is no contest (i.e., Friday, Saturday, Sunday for non-special weeks)
+            if is_special_week and now.weekday() == 0 and now.hour == 0:  # Monday 12:00 AM
+                await self.create_special_contest_channel()
+            elif is_special_week and now.weekday() == 6 and now.hour == 23:  # Sunday 11:00 PM
+                await self.delete_special_contest_channel()
             if current_phase != last_phase:
                 await self.update_phase()
                 if "Downtime" in current_phase and not downtime_message_sent:
+                    self.SUBMITTED_TRACK.set(0)
                     await theme_channel.send("The contest has ended for today. Enjoy a few hours of downtime!")
                     downtime_message_sent = True
                 last_phase = current_phase
-
+    
             current_time_str = now.strftime('%H:%M')
             state_changed = False
             if current_time_str == '09:00' and not alert_sent_0930:
@@ -369,89 +478,87 @@ class Contests(commands.Cog):
                 alert_sent_2100 = False
                 downtime_message_sent = False
                 state_changed = True
-
+            
             if state_changed:
                 state_str = f"{int(alert_sent_0930)},{int(alert_sent_2100)},{int(downtime_message_sent)}"
                 async with self.bot.pool.acquire() as connection:
                     await connection.execute('INSERT INTO tasks (contests_state, contests_time) VALUES ($1, $2)', state_str, int(now.timestamp()))
-
-            await asyncio.sleep(55)  # Shortened to 55 seconds
+            await asyncio.sleep(55) 
+    
 
 
     async def count_votes(self):
-        with tracer.start_as_current_span("count_votes"):
-            while True:
-                now = datetime.now(timezone('US/Eastern'))
-                current_date = now.date()
-                current_timestamp = int(now.timestamp())
-                if now.hour == 22:
-                    if self.last_winner_announcement_date != current_date:
-                        current_contest_start_time = now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
-                        channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID)
-                        theme_channel = self.bot.get_channel(THEME_CHANNEL_ID)
-                        async with self.bot.pool.acquire() as connection:
-                            # Filter artworks for today's contest only
-                            rows = await connection.fetch('SELECT submitted_by, message_id FROM artwork WHERE submitted_on >= $1', current_contest_start_time)
-                            for row in rows:
-                                try:
-                                    message = await channel.fetch_message(row['message_id'])
-                                    for reaction in message.reactions:
-                                        if str(reaction.emoji) == "👍":
-                                            await connection.execute('UPDATE artwork SET upvotes = $1 WHERE submitted_by = $2 AND message_id = $3', reaction.count, row['submitted_by'], message.id)
-                                except Exception as e:
-                                    print(f"Failed to fetch or process message: {e}")
-                            # Fetch top 5 artworks by upvotes for today's contest
-                            top_artworks = await connection.fetch('SELECT submitted_by, upvotes, link FROM artwork WHERE submitted_on >= $1 ORDER BY upvotes DESC, submitted_by ASC', current_contest_start_time)
-                            if top_artworks:
-                                awards = XP_AWARDS.copy()
-                                winners = []
-                                prev_upvotes = -1
-                                tie_pool = []
-                                tie_pool_xp = 0
-                                for i, artwork in enumerate(top_artworks[:5]):
-                                    if artwork['upvotes'] == prev_upvotes:
-                                        tie_pool.append(artwork['submitted_by'])
-                                        tie_pool_xp += awards[i]
-                                    else:
-                                        if tie_pool:
-                                            distributed_xp = tie_pool_xp // len(tie_pool)
-                                            for tied_winner in tie_pool:
-                                                winners.append((tied_winner, distributed_xp))
-                                        tie_pool = [artwork['submitted_by']]
-                                        tie_pool_xp = awards[i]
-                                    prev_upvotes = artwork['upvotes']
-        
-                                if tie_pool:
-                                    distributed_xp = tie_pool_xp // len(tie_pool)
-                                    for tied_winner in tie_pool:
-                                        winners.append((tied_winner, distributed_xp))
-                                winner_mentions = ''
-                                for i, (winner, xp) in enumerate(winners):
-                                    winner_mentions += f"{i + 1}. <@{winner}>\n"
-                                first_place_artwork_link = top_artworks[0]['link']
-                                embed = discord.Embed(
-                                    title=f"Daily Contest Announcement",
-                                    description=f"The winners of today's contest are:\n{winner_mentions}",
-                                    color=random.randint(0, 0xFFFFFF)
-                                )
-                                embed.set_image(url=first_place_artwork_link)
-                                await theme_channel.send(embed=embed)
-        
-                                for winner, xp_award in winners:
-                                    user = await connection.fetchrow('SELECT u_id, xp, level, consecutive_wins FROM users WHERE u_id = $1', winner)
-                                    if user:
-                                        new_xp = user['xp'] + xp_award
-                                        new_level = new_xp // 100
-                                        new_consecutive_wins = user['consecutive_wins'] + 1
-                                        last_win_date = current_timestamp
-                                        await connection.execute('UPDATE users SET xp = $1, level = $2, tokens = tokens + 1, consecutive_wins = $3, last_win_date = $4 WHERE u_id = $5',
-                                                                 new_xp, new_level, new_consecutive_wins, last_win_date, winner)
-                                    else:
-                                        print(f"No user found for u_id: {winner}")
-        
-                        self.last_winner_announcement_date = current_date
-                await asyncio.sleep(60)
+        while True:
+            now = datetime.now(timezone('US/Eastern'))
+            current_date = now.date()
+            current_timestamp = int(now.timestamp())
+            if now.hour == 22:
+                if self.last_winner_announcement_date != current_date:
+                    current_contest_start_time = now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+                    channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID)
+                    theme_channel = self.bot.get_channel(THEME_CHANNEL_ID)
+                    async with self.bot.pool.acquire() as connection:
+                        # Filter artworks for today's contest only
+                        rows = await connection.fetch('SELECT submitted_by, message_id FROM artwork WHERE submitted_on >= $1', current_contest_start_time)
+                        for row in rows:
+                            try:
+                                message = await channel.fetch_message(row['message_id'])
+                                for reaction in message.reactions:
+                                    if str(reaction.emoji) == "👍":
+                                        await connection.execute('UPDATE artwork SET upvotes = $1 WHERE submitted_by = $2 AND message_id = $3', reaction.count, row['submitted_by'], message.id)
+                            except Exception as e:
+                                print(f"Failed to fetch or process message: {e}")
+                        # Fetch top 5 artworks by upvotes for today's contest
+                        top_artworks = await connection.fetch('SELECT submitted_by, upvotes, link FROM artwork WHERE submitted_on >= $1 ORDER BY upvotes DESC, submitted_by ASC', current_contest_start_time)
+                        if top_artworks:
+                            awards = XP_AWARDS.copy()
+                            winners = []
+                            prev_upvotes = -1
+                            tie_pool = []
+                            tie_pool_xp = 0
+                            for i, artwork in enumerate(top_artworks[:5]):
+                                if artwork['upvotes'] == prev_upvotes:
+                                    tie_pool.append(artwork['submitted_by'])
+                                    tie_pool_xp += awards[i]
+                                else:
+                                    if tie_pool:
+                                        distributed_xp = tie_pool_xp // len(tie_pool)
+                                        for tied_winner in tie_pool:
+                                            winners.append((tied_winner, distributed_xp))
+                                    tie_pool = [artwork['submitted_by']]
+                                    tie_pool_xp = awards[i]
+                                prev_upvotes = artwork['upvotes']
     
+                            if tie_pool:
+                                distributed_xp = tie_pool_xp // len(tie_pool)
+                                for tied_winner in tie_pool:
+                                    winners.append((tied_winner, distributed_xp))
+                            winner_mentions = ''
+                            for i, (winner, xp) in enumerate(winners):
+                                winner_mentions += f"{i + 1}. <@{winner}>\n"
+                            first_place_artwork_link = top_artworks[0]['link']
+                            embed = discord.Embed(
+                                title=f"Daily Contest Announcement",
+                                description=f"The winners of today's contest are:\n{winner_mentions}",
+                                color=random.randint(0, 0xFFFFFF)
+                            )
+                            embed.set_image(url=first_place_artwork_link)
+                            await theme_channel.send(embed=embed)
+    
+                            for winner, xp_award in winners:
+                                user = await connection.fetchrow('SELECT u_id, xp, level, consecutive_wins FROM users WHERE u_id = $1', winner)
+                                if user:
+                                    new_xp = user['xp'] + xp_award
+                                    new_level = new_xp // 100
+                                    new_consecutive_wins = user['consecutive_wins'] + 1
+                                    last_win_date = current_timestamp
+                                    await connection.execute('UPDATE users SET xp = $1, level = $2, tokens = tokens + 1, consecutive_wins = $3, last_win_date = $4 WHERE u_id = $5',
+                                                             new_xp, new_level, new_consecutive_wins, last_win_date, winner)
+                                else:
+                                    print(f"No user found for u_id: {winner}")
+    
+                    self.last_winner_announcement_date = current_date
+            await asyncio.sleep(59)
     
     
     

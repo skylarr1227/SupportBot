@@ -7,9 +7,11 @@ import asyncio
 from dotenv import load_dotenv
 import logging
 import openai
-from notion_client import AsyncClient
+#from notion_client import AsyncClient
 from supportbot.core.utils import team
 import asyncpg
+import discord.ext.prometheus
+from prometheus_client import Counter, Gauge, Summary, Enum, Info
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -64,6 +66,7 @@ class SupportBot(commands.AutoShardedBot):
             *args,
             **kwargs,
         )
+        STATS = Counter, Gauge, Summary, Enum, Info
         self.pool = None 
         pool = self.pool
         SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY")
@@ -102,7 +105,6 @@ class SupportBot(commands.AutoShardedBot):
         NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
         OPENAI_KEY = os.environ.get("OPENAI_KEY")
         NOTION_DATABASE_URL = os.environ.get("NOTION_DATABASE_URL")
-        FRESHDESK_API_KEY = os.environ.get("FRESHDESK_API_KEY")
         FRESHDESK_DOMAIN = os.environ.get("FRESHDESK_DOMAIN")
         self.logger = logging.Logger("supportbot")
         supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
@@ -112,7 +114,6 @@ class SupportBot(commands.AutoShardedBot):
         self.OPENAI_KEY = OPENAI_KEY
         self.SPECIFIC_POST_CHANNEL_ID = 1102722546232729620
         #self.openai = openai.api_key
-        self.api_key = FRESHDESK_API_KEY
         self.domain = FRESHDESK_DOMAIN
         self.api_url = f"https://{self.domain}.freshdesk.com/api/v2/"
 
@@ -124,15 +125,6 @@ class SupportBot(commands.AutoShardedBot):
                 host=os.environ.get("PGHOST")
                 #port=os.environ.get("PGPORT")
             )
-
-    async def create_notion_client(self):
-        try:
-            self.notion_client = AsyncClient(auth=self.NOTION_TOKEN)
-            self.collection = self.notion_client.databases.retrieve("b48e1f0a4f2e4a758992ba1931a35669")
-        except Exception as e:
-            await self.on_error("create_notion_client", e)
-        return self.notion_client
-
 
     async def _setup_hook(self):
         self.db = await self.create_pool()
