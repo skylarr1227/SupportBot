@@ -54,7 +54,6 @@ class SupportBot(commands.AutoShardedBot):
             *args,
             **kwargs,
         )
-        STATS = Counter, Gauge, Summary, Enum, Info
         self.pool = None 
         pool = self.pool
         SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY")
@@ -90,14 +89,14 @@ class SupportBot(commands.AutoShardedBot):
         self.token = TOKEN
         SUPABASE_URL = os.environ.get("SUPABASE_URL") # this is the supabase url
         self.SUPABASE_URL = SUPABASE_URL
-        NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
+        #NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
         OPENAI_KEY = os.environ.get("OPENAI_KEY")
-        NOTION_DATABASE_URL = os.environ.get("NOTION_DATABASE_URL")
-        FRESHDESK_DOMAIN = os.environ.get("FRESHDESK_DOMAIN")
+        #NOTION_DATABASE_URL = os.environ.get("NOTION_DATABASE_URL")
+        #FRESHDESK_DOMAIN = os.environ.get("FRESHDESK_DOMAIN")
         self.logger = logging.Logger("supportbot")
         supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
         self.supabase = supabase
-        self.NOTION_TOKEN = NOTION_TOKEN
+        #self.NOTION_TOKEN = NOTION_TOKEN
         #self.collection = self.notion_client.databases.retrieve("b48e1f0a4f2e4a758992ba1931a35669")
         self.OPENAI_KEY = OPENAI_KEY
         self.SPECIFIC_POST_CHANNEL_ID = 1102722546232729620
@@ -195,7 +194,6 @@ class SupportBot(commands.AutoShardedBot):
     async def on_ready(self):
         self.logger.info(f'{self.user.name} has connected to Discord!')
         specific_post_channel = self.get_channel(1102722546232729620)
-        await self.create_notion_client()
         if specific_post_channel is None:
             thread = await specific_post_channel.create_thread(
                 name="This is a test",content="Known issues will be listed here with links to each post")   
