@@ -76,7 +76,7 @@ class Dev(commands.Cog):
     async def links(self, ctx, page: int = 0):
         """Fetches a list of tasks and displays them in a paginated format."""
         async with self.bot.pool.acquire() as connection:
-            rows = await connection.fetch('SELECT task_id, name FROM art WHERE name IS NOT NULL')
+            rows = await connection.fetch('SELECT task_id, name FROM art WHERE name IS NOT NULL order by created_at ASC')
 
         pages = []
         for i in range(0, len(rows), 30):  # Assuming you want 10 items per page
