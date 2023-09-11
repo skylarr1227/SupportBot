@@ -40,33 +40,34 @@ class Dev(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def paginate(self, ctx, pages):
+    async def paginate(self, ctx, pages, start_page=0):
         """Utility function to paginate embeds"""
-        current_page = 0
+        current_page = start_page
         msg = await ctx.send(embed=pages[current_page])
-
+    
         # Add reactions
         await msg.add_reaction("◀️")
         await msg.add_reaction("▶️")
-
+    
         def check(reaction, user):
             return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"]
-
+    
         while True:
             try:
                 reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
-
+    
                 if str(reaction.emoji) == "▶️" and current_page < len(pages) - 1:
                     current_page += 1
                 elif str(reaction.emoji) == "◀️" and current_page > 0:
                     current_page -= 1
-
+    
                 await msg.edit(embed=pages[current_page])
                 await msg.remove_reaction(reaction, user)
-
+    
             except asyncio.TimeoutError:
                 await msg.clear_reactions()
                 break
+
 
 
 
@@ -76,7 +77,7 @@ class Dev(commands.Cog):
         """Fetches a list of tasks and displays them in a paginated format."""
         async with self.bot.pool.acquire() as connection:
             rows = await connection.fetch('SELECT task_id, name FROM art WHERE name IS NOT NULL')
-    
+
         pages = []
         for i in range(0, len(rows), 10):  # Assuming you want 10 items per page
             description = ""
@@ -84,10 +85,10 @@ class Dev(commands.Cog):
                 task_id = row['task_id']
                 name = row['name']
                 description += f"https://dream.ai/listing/{task_id} - {name}\n"
-            
+
             embed = discord.Embed(title="Tasks List", description=description, color=discord.Color.blue())
             pages.append(embed)
-    
+
         # Check if the page number is valid
         if 0 <= page < len(pages):
             await self.paginate(ctx, pages, page - 1)  # -1 because list index starts from 0
