@@ -44,26 +44,26 @@ class Dev(commands.Cog):
         """Utility function to paginate embeds"""
         current_page = start_page
         msg = await ctx.send(embed=pages[current_page])
-    
+
         # Add reactions
         await msg.add_reaction("◀️")
         await msg.add_reaction("▶️")
-    
+
         def check(reaction, user):
             return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"]
-    
+
         while True:
             try:
                 reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
-    
+
                 if str(reaction.emoji) == "▶️" and current_page < len(pages) - 1:
                     current_page += 1
                 elif str(reaction.emoji) == "◀️" and current_page > 0:
                     current_page -= 1
-    
+
                 await msg.edit(embed=pages[current_page])
                 await msg.remove_reaction(reaction, user)
-    
+
             except asyncio.TimeoutError:
                 await msg.clear_reactions()
                 break
@@ -79,7 +79,7 @@ class Dev(commands.Cog):
             rows = await connection.fetch('SELECT task_id, name FROM art WHERE name IS NOT NULL')
 
         pages = []
-        for i in range(0, len(rows), 10):  # Assuming you want 10 items per page
+        for i in range(0, len(rows), 50):  # Assuming you want 10 items per page
             description = ""
             for row in rows[i:i+10]:
                 task_id = row['task_id']
