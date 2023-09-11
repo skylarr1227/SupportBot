@@ -71,20 +71,18 @@ class Dev(commands.Cog):
 
 
 
-
-
-
     @commands.command()
     async def list_tasks(self, ctx):
-        """List all tasks with links and names."""
         async with self.bot.pool.acquire() as connection:
             rows = await connection.fetch('SELECT task_id, name FROM art WHERE name IS NOT NULL')
-        if not rows:
-            return await ctx.send("No tasks found!")
-
-        # Paginate results
-        menu = menus.MenuPages(source=TaskMenu(rows), clear_reactions_after=True)
-        await menu.start(ctx)
+        
+        links = [f"https://dream.ai/listing/{row['task_id']} - {row['name']}" for row in rows]
+        
+        # Split the list of links into pages of, say, 10 links per page
+        per_page = 30
+        pages = [discord.Embed(description="\n".join(links[i:i+per_page])) for i in range(0, len(links), per_page)]
+    
+        await self.paginate(ctx, pages)
 
 
 
