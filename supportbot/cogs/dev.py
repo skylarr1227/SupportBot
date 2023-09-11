@@ -70,9 +70,9 @@ class Dev(commands.Cog):
 
 
 
-
+    @team()
     @commands.command()
-    async def list_tasks(self, ctx):
+    async def links(self, ctx):
         async with self.bot.pool.acquire() as connection:
             rows = await connection.fetch('SELECT task_id, name FROM art WHERE name IS NOT NULL')
         
