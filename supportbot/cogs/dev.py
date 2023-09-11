@@ -81,7 +81,7 @@ class Dev(commands.Cog):
         pages = []
         for i in range(0, len(rows), 50):  # Assuming you want 10 items per page
             description = ""
-            for row in rows[i:i+10]:
+            for row in rows[i:i+50]:
                 task_id = row['task_id']
                 name = row['name']
                 description += f"https://dream.ai/listing/{task_id} - {name}\n"
