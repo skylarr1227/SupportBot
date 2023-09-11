@@ -71,18 +71,27 @@ class Dev(commands.Cog):
 
 
     @team()
-    @commands.command()
-    async def links(self, ctx):
+    @commands.command(name="list_tasks")
+    async def list_tasks(self, ctx, page: int = 0):
+        """Fetches a list of tasks and displays them in a paginated format."""
         async with self.bot.pool.acquire() as connection:
             rows = await connection.fetch('SELECT task_id, name FROM art WHERE name IS NOT NULL')
-        
-        links = [f"https://dream.ai/listing/{row['task_id']} - {row['name']}" for row in rows]
-        
-        # Split the list of links into pages of, say, 10 links per page
-        per_page = 30
-        pages = [discord.Embed(description="\n".join(links[i:i+per_page])) for i in range(0, len(links), per_page)]
     
-        await self.paginate(ctx, pages)
+        pages = []
+        for i in range(0, len(rows), 10):  # Assuming you want 10 items per page
+            embed = discord.Embed(title="Tasks List", color=discord.Color.blue())
+            for row in rows[i:i+10]:
+                task_id = row['task_id']
+                name = row['name']
+                embed.add_field(name=f"https://dream.ai/listing/{task_id}", value=f"- {name}", inline=False)
+            pages.append(embed)
+    
+        # Check if the page number is valid
+        if 0 <= page < len(pages):
+            await self.paginate(ctx, pages, page - 1)  # -1 because list index starts from 0
+        else:
+            await ctx.send("Invalid page number.")
+
 
 
 
