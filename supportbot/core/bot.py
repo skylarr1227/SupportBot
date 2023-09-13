@@ -219,4 +219,8 @@ class SupportBot(commands.AutoShardedBot):
             self.logger.info("Postgres Database has FAILED to Initialize.")
         for cogname in ("events", "dev", "tickets", "metrics", "zendesk"):
             await self.load_extension(f"supportbot.cogs.{cogname}")
+        try:
+            await self.add_cog(PrometheusCog(self, port=9999))
+        except Exception as e:
+            print(e)
         await super().start(*args, **kwargs)
