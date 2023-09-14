@@ -118,6 +118,14 @@ class SupportBot(commands.AutoShardedBot):
 
         # new mods watch
         self.specific_users_counter = Counter('discord_specific_users_activity', 'Activity count for specific users', ['user'])
+        self.USER1_WORD_COUNTER = Counter('discord_user1_top_words', 'Top 25 words for user1', ['word'])
+        self.USER2_WORD_COUNTER = Counter('discord_user2_top_words', 'Top 25 words for user2', ['word'])
+        self.USER3_WORD_COUNTER = Counter('discord_user3_top_words', 'Top 25 words for user3', ['word'])
+        self.word_counters = {
+            "1085865858183737384": Counter(),
+            "894035560623128576": Counter(),
+            "273621738657415169": Counter()
+        }
 
         self.messages_per_user_counter = Counter('discord_messages_per_user', 'Number of messages per user', ['user'])
         self.messages_per_channel_counter = Counter('discord_messages_per_channel', 'Number of messages per channel', ['channel'])

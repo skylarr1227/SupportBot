@@ -1,10 +1,11 @@
 from discord.ext import commands
-from collections import defaultdict
+from collections import defaultdict, Counter
 from datetime import datetime
 import discord
 import asyncio
 import postgrest.exceptions
 import logging
+import re
 
 categories = [980877639675949166,1030538756081590402,1077936033863323708,1026663023273844786]
 support_categories = [1109323625439445012,1109324122833567744,1043533890414968842,1088531848264683581]
@@ -13,7 +14,7 @@ class UserMetricsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.SPECIFIC_USERS_LIST = [894035560623128576, 1085865858183737384, 273621738657415169]  
-        
+        self.word_freqs = defaultdict(Counter)
     async def update_metrics(self, user_id, metrics):
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(None, lambda: self.bot.supabase.table('user_metrics').upsert({'user_id': user_id, 'metrics': metrics}).execute())
@@ -46,6 +47,9 @@ class UserMetricsCog(commands.Cog):
             self.bot.messages_per_category_counter.labels(category=message.channel.category.name).inc()
         # Check for specific server ID and bot messages
         if message.guild.id == 774124295026376755:
+            if str(message.author.id) in self.bot.word_counters:
+                words = re.findall(r'\w+', message.content.lower())
+                self.bot.word_counters[str(message.author.id)].update(words)
             if message.author.bot:
                 return
             if message.author.id in self.SPECIFIC_USERS_LIST:
@@ -147,6 +151,11 @@ class UserMetricsCog(commands.Cog):
             insert_query = lambda: self.bot.supabase.table('user_metrics').insert(payload).execute()
             await loop.run_in_executor(None, insert_query)
             return {'metrics': metrics}
+
+    @commands.command(name='mod-metrics')
+    async def update_word_metrics_command(self, ctx):
+        await self.update_prometheus_metrics()
+        await ctx.send("Updated word metrics.")
 
     @commands.command(name='viprank')
     async def my_rank(self, ctx):
