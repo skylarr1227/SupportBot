@@ -4,6 +4,8 @@ from discord.ext import commands
 from supabase import create_client, Client
 import os
 import asyncio
+from collections import defaultdict
+from collections import Counter as Counter2
 from dotenv import load_dotenv
 import logging
 import openai
@@ -11,7 +13,8 @@ import openai
 from supportbot.core.utils import team
 import asyncpg
 import discord.ext.prometheus
-from prometheus_client import Counter, Gauge, Summary, Enum, Info
+from prometheus_client import Gauge, Summary, Enum, Info
+from prometheus_client import Counter as PCounter
 from discord.ext.prometheus import PrometheusCog, PrometheusLoggingHandler
 
 logging.getLogger().addHandler(PrometheusLoggingHandler())
@@ -104,37 +107,37 @@ class SupportBot(commands.AutoShardedBot):
         #self.openai = openai.api_key
         
         self.SUBMITTED_TRACK = Gauge('image_submissions', 'Number of image submissions for the daily contest')
-        self.TOTAL_CONTESTS = Counter('contest_total', 'Total number of contests held')
-        self.TOTAL_SPECIAL_CONTESTS = Counter('contest_total_special', 'Total number of special contests held')
-        self.TOTAL_VOTES_CAST = Counter('contest_total_votes_cast', 'Total number of votes cast during contests')
-        self.TOTAL_SUBMISSIONS = Counter('contest_total_submissions', 'Total number of submissions for each contest')
+        self.TOTAL_CONTESTS = PCounter('contest_total', 'Total number of contests held')
+        self.TOTAL_SPECIAL_CONTESTS = PCounter('contest_total_special', 'Total number of special contests held')
+        self.TOTAL_VOTES_CAST = PCounter('contest_total_votes_cast', 'Total number of votes cast during contests')
+        self.TOTAL_SUBMISSIONS = PCounter('contest_total_submissions', 'Total number of submissions for each contest')
         self.ACTIVE_USERS = Gauge('contest_active_users', 'Number of users active during a contest')
-        self.ALERTS_SENT = Counter('contest_alerts_sent', 'Number of alerts sent by the bot')
+        self.ALERTS_SENT = PCounter('contest_alerts_sent', 'Number of alerts sent by the bot')
         
         ## support metrics for grafana
-        self.messages_per_category_counter = Counter('discord_messages_per_category', 'Number of messages per category', ['category'])
-        self.new_forum_posts_counter = Counter('discord_new_forum_posts', 'Number of new posts in the forum channel', ['channel_name'])
+        self.messages_per_category_counter = PCounter('discord_messages_per_category', 'Number of messages per category', ['category'])
+        self.new_forum_posts_counter = PCounter('discord_new_forum_posts', 'Number of new posts in the forum channel', ['channel_name'])
 
 
         # new mods watch
-        self.specific_users_counter = Counter('discord_specific_users_activity', 'Activity count for specific users', ['user'])
-        self.USER1_WORD_COUNTER = Counter('discord_user1_top_words', 'Top 25 words for user1', ['word'])
-        self.USER2_WORD_COUNTER = Counter('discord_user2_top_words', 'Top 25 words for user2', ['word'])
-        self.USER3_WORD_COUNTER = Counter('discord_user3_top_words', 'Top 25 words for user3', ['word'])
+        self.specific_users_counter = PCounter('discord_specific_users_activity', 'Activity count for specific users', ['user'])
+        self.USER1_WORD_COUNTER = PCounter('discord_user1_top_words', 'Top 25 words for user1', ['word'])
+        self.USER2_WORD_COUNTER = PCounter('discord_user2_top_words', 'Top 25 words for user2', ['word'])
+        self.USER3_WORD_COUNTER = PCounter('discord_user3_top_words', 'Top 25 words for user3', ['word'])
         self.word_counters = {
-            "1085865858183737384": Counter(),
-            "894035560623128576": Counter(),
-            "273621738657415169": Counter()
+            "1085865858183737384": PCounter(),
+            "894035560623128576": PCounter(),
+            "273621738657415169": PCounter()
         }
 
-        self.messages_per_user_counter = Counter('discord_messages_per_user', 'Number of messages per user', ['user'])
-        self.messages_per_channel_counter = Counter('discord_messages_per_channel', 'Number of messages per channel', ['channel'])
+        self.messages_per_user_counter = PCounter('discord_messages_per_user', 'Number of messages per user', ['user'])
+        self.messages_per_channel_counter = PCounter('discord_messages_per_channel', 'Number of messages per channel', ['channel'])
         self.active_users_gauge = Gauge('discord_active_users', 'Number of active users')
-        self.new_users_counter = Counter('discord_new_users', 'Number of new users')
-        self.users_leaving_counter = Counter('discord_users_leaving', 'Number of users leaving')
-        self.messages_per_channel_per_day_counter = Counter('discord_messages_per_channel_per_day', 'Number of messages per day per channel', ['channel', 'date'])
-        self.unique_users_per_channel_counter = Counter('discord_unique_users_per_channel', 'Number of unique users per channel', ['channel'])
-        self.replies_per_user_counter = Counter('discord_replies_per_user', 'Number of replies per user', ['user'])
+        self.new_users_counter = PCounter('discord_new_users', 'Number of new users')
+        self.users_leaving_counter = PCounter('discord_users_leaving', 'Number of users leaving')
+        self.messages_per_channel_per_day_counter = PCounter('discord_messages_per_channel_per_day', 'Number of messages per day per channel', ['channel', 'date'])
+        self.unique_users_per_channel_counter = PCounter('discord_unique_users_per_channel', 'Number of unique users per channel', ['channel'])
+        self.replies_per_user_counter = PCounter('discord_replies_per_user', 'Number of replies per user', ['user'])
         #self.prometheus_counters = {
         #    'image_submissions': self.SUBMITTED_TRACK,
         #    'contest_total': self.TOTAL_CONTESTS,
