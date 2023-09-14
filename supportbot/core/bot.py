@@ -142,13 +142,13 @@ class SupportBot(commands.AutoShardedBot):
 
     async def fetch_counter(self, name):
         """Fetch a counter value from the database."""
-        async with self.pg_pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
             count = await conn.fetchval('SELECT count FROM counters WHERE name = $1', name)
             return count if count is not None else 0
 
     async def increment_counter(self, name):
         """Increment the counter in the database."""
-        async with self.pg_pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
             await conn.execute('''
                 INSERT INTO counters(name, count) VALUES($1, 1)
                 ON CONFLICT (name) DO UPDATE SET count = counters.count + 1
@@ -233,7 +233,7 @@ class SupportBot(commands.AutoShardedBot):
             self.logger.info(f'Counters and Metrics Loaded, exporting to Prometheus')
         except:
             self.logger.error(f'Error occurred fetching counters!')
-        
+
         specific_post_channel = self.get_channel(1102722546232729620)
         if specific_post_channel is None:
             thread = await specific_post_channel.create_thread(

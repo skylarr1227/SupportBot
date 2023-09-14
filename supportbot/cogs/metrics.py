@@ -174,7 +174,6 @@ class UserMetricsCog(commands.Cog):
 
         await ctx.send(f"🏆 Top Testers 🏆\n{leaderboard_text}")
 
-
     @commands.command(name='get_summary_metrics')
     async def get_summary_metrics(self, ctx):
         try:
