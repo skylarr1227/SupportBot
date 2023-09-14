@@ -113,7 +113,8 @@ class SupportBot(commands.AutoShardedBot):
         
         ## support metrics for grafana
         self.messages_per_category_counter = Counter('discord_messages_per_category', 'Number of messages per category', ['category'])
-        self.new_forum_posts_counter = Counter('discord_new_forum_posts', 'Number of new posts in the forum channel')
+        self.new_forum_posts_counter = Counter('discord_new_forum_posts', 'Number of new posts in the forum channel', ['channel_name'])
+
 
         # new mods watch
         self.specific_users_counter = Counter('discord_specific_users_activity', 'Activity count for specific users', ['user'])

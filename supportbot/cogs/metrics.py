@@ -48,10 +48,9 @@ class UserMetricsCog(commands.Cog):
         if message.guild.id == 774124295026376755:
             if message.author.bot:
                 return
-            if str(message.author.id) in self.SPECIFIC_USERS_LIST:
-                self.bot.specific_users_counter.labels(user_id=str(message.author.name)).inc()
-            specific_forum_channel_ids = support_categories
-            if message.channel.id in specific_forum_channel_ids and isinstance(message.channel, discord.Thread) and message.type == discord.MessageType.default:
+            if message.author.id in self.SPECIFIC_USERS_LIST:
+                self.bot.specific_users_counter.labels(user=str(message.author.name)).inc() 
+            if message.channel.id in support_categories and isinstance(message.channel, discord.Thread):
                 parent_channel_name = message.channel.parent.name
                 self.bot.new_forum_posts_counter.labels(channel_name=parent_channel_name).inc()
             self.bot.messages_per_user_counter.labels(user=str(message.author.name)).inc()
