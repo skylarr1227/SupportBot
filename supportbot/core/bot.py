@@ -56,6 +56,7 @@ class SupportBot(commands.AutoShardedBot):
         )
         self.pool = None 
         pool = self.pool
+        self.counters = {}
         SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY")
         self.SUPABASE_API_KEY = SUPABASE_API_KEY
         self.WOMBO_TEAM = [
@@ -118,7 +119,40 @@ class SupportBot(commands.AutoShardedBot):
         self.messages_per_channel_per_day_counter = Counter('discord_messages_per_channel_per_day', 'Number of messages per day per channel', ['channel', 'date'])
         self.unique_users_per_channel_counter = Counter('discord_unique_users_per_channel', 'Number of unique users per channel', ['channel'])
         self.replies_per_user_counter = Counter('discord_replies_per_user', 'Number of replies per user', ['user'])
+        self.prometheus_counters = {
+            'image_submissions': self.SUBMITTED_TRACK,
+            'contest_total': self.TOTAL_CONTESTS,
+            'contest_total_special': self.TOTAL_SPECIAL_CONTESTS,
+            'contest_total_votes_cast': self.TOTAL_VOTES_CAST,
+            'contest_total_submissions': self.TOTAL_SUBMISSIONS,
+            'contest_active_users': self.ACTIVE_USERS,
+            'contest_alerts_sent': self.ALERTS_SENT,
+            'discord_messages_per_user': self.messages_per_user_counter,
+            'discord_messages_per_channel': self.messages_per_channel_counter,
+            'discord_active_users': self.active_users_gauge,
+            'discord_new_users': self.new_users_counter,
+            'discord_users_leaving': self.users_leaving_counter,
+            'discord_messages_per_channel_per_day': self.messages_per_channel_per_day_counter,
+            'discord_unique_users_per_channel': self.unique_users_per_channel_counter,
+            'discord_replies_per_user': self.replies_per_user_counter
+        }   
 
+
+
+
+    async def fetch_counter(self, name):
+        """Fetch a counter value from the database."""
+        async with self.pg_pool.acquire() as conn:
+            count = await conn.fetchval('SELECT count FROM counters WHERE name = $1', name)
+            return count if count is not None else 0
+
+    async def increment_counter(self, name):
+        """Increment the counter in the database."""
+        async with self.pg_pool.acquire() as conn:
+            await conn.execute('''
+                INSERT INTO counters(name, count) VALUES($1, 1)
+                ON CONFLICT (name) DO UPDATE SET count = counters.count + 1
+            ''', name)
 
 
     async def create_pool(self):
@@ -193,13 +227,19 @@ class SupportBot(commands.AutoShardedBot):
 
     async def on_ready(self):
         self.logger.info(f'{self.user.name} has connected to Discord!')
+        try:
+            for name, counter in self.prometheus_counters.items():
+                counter._value.set(await self.fetch_counter(name))
+            self.logger.info(f'Counters and Metrics Loaded, exporting to Prometheus')
+        except:
+            self.logger.error(f'Error occurred fetching counters!')
+        
         specific_post_channel = self.get_channel(1102722546232729620)
         if specific_post_channel is None:
             thread = await specific_post_channel.create_thread(
-                name="This is a test",content="Known issues will be listed here with links to each post")   
+                name="This is a test", content="Known issues will be listed here with links to each post")
             print(f'Channel with ID {1102722546232729620} not found.')
             return
-
         # Create the specific post
         #self.specific_post = await specific_post_channel.send('List of open threads:')
 
