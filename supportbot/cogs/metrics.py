@@ -52,7 +52,8 @@ class UserMetricsCog(commands.Cog):
                 self.bot.specific_users_counter.labels(user_id=str(message.author.name)).inc()
             specific_forum_channel_ids = support_categories
             if message.channel.id in specific_forum_channel_ids and isinstance(message.channel, discord.Thread) and message.type == discord.MessageType.default:
-                self.bot.new_forum_posts_counter.inc()
+                parent_channel_name = message.channel.parent.name
+                self.bot.new_forum_posts_counter.labels(channel_name=parent_channel_name).inc()
             self.bot.messages_per_user_counter.labels(user=str(message.author.name)).inc()
             self.bot.messages_per_channel_counter.labels(channel=message.channel.name).inc()
             await self.bot.increment_counter("messages_per_user_counter")
