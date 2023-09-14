@@ -49,13 +49,14 @@ class UserMetricsCog(commands.Cog):
             self.bot.messages_per_category_counter.labels(category=message.channel.category.name).inc()
         # Check for specific server ID and bot messages
         if message.guild.id == 774124295026376755:
-            if str(message.author.id) in self.bot.word_counters:
-                words = re.findall(r'\w+', message.content.lower())
-                self.bot.word_counters[str(message.author.id)].update(words)
+            
             if message.author.bot:
                 return
             if message.author.id in self.SPECIFIC_USERS_LIST:
                 self.bot.specific_users_counter.labels(user=str(message.author.name)).inc() 
+                words = message.content.split()
+                for word in words:
+                    self.bot.word_counters[message.author.name].inc()
             if message.channel.id in support_categories and isinstance(message.channel, discord.Thread):
                 parent_channel_name = message.channel.parent.name
                 self.bot.new_forum_posts_counter.labels(channel_name=parent_channel_name).inc()

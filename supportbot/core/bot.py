@@ -125,9 +125,9 @@ class SupportBot(commands.AutoShardedBot):
         self.USER2_WORD_COUNTER = PCounter('discord_user2_top_words', 'Top 25 words for user2', ['word'])
         self.USER3_WORD_COUNTER = PCounter('discord_user3_top_words', 'Top 25 words for user3', ['word'])
         self.word_counters = {
-            "1085865858183737384": PCounter(name="Paul", documentation="Word stats"),
-            "894035560623128576": PCounter(name="Lou", documentation="Word stats"),
-            "273621738657415169": PCounter(name="Dragonfly", documentation="Word stats")
+            "Paul": PCounter(name="Paul", documentation="Word stats"),
+            "Lou": PCounter(name="Lou", documentation="Word stats"),
+            "Dragonfly": PCounter(name="Dragonfly", documentation="Word stats")
         }
 
         self.messages_per_user_counter = PCounter('discord_messages_per_user', 'Number of messages per user', ['user'])
