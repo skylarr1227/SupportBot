@@ -56,17 +56,14 @@ class UserMetricsCog(commands.Cog):
                 self.bot.new_forum_posts_counter.labels(channel_name=parent_channel_name).inc()
             self.bot.messages_per_user_counter.labels(user=str(message.author.name)).inc()
             self.bot.messages_per_channel_counter.labels(channel=message.channel.name).inc()
-            await self.bot.increment_counter("messages_per_user_counter")
-            await self.bot.increment_counter("messages_per_channel_counter")
+
             # Channel Activity Metrics
             self.bot.messages_per_channel_per_day_counter.labels(channel=message.channel.name, date=datetime.today().strftime('%Y-%m-%d')).inc()
             self.bot.unique_users_per_channel_counter.labels(channel=message.channel.name).inc()
-            await self.bot.increment_counter("messages_per_channel_per_day_counter")
-            await self.bot.increment_counter("unique_users_per_channel_counter")
+
             # User Engagement Metrics
             if message.reference:
                 self.bot.replies_per_user_counter.labels(user=str(message.author.name)).inc()
-                await self.bot.increment_counter("replies_per_user_counter")
         if message.guild.id != 914705867855773746 or message.author.bot:
             return
         # Retrieve existing metrics or initialize
@@ -121,14 +118,14 @@ class UserMetricsCog(commands.Cog):
         if member.guild.id == 774124295026376755:
             self.bot.active_users_gauge.inc()
             self.bot.new_users_counter.inc()
-            await self.bot.increment_counter("new_users_counter")
+      
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
         if member.guild.id == 774124295026376755:
             self.bot.active_users_gauge.dec()
             self.bot.users_leaving_counter.inc()
-            await self.bot.increment_counter("users_leaving_counter")
+       
 
 
     async def get_or_create_metrics(self, user_id):
