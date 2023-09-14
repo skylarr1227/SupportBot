@@ -1,6 +1,6 @@
 from discord.ext import commands
 from collections import defaultdict
-from collections import Counter as Counter2
+from collections import Counter as Counter
 from datetime import datetime
 import discord
 import asyncio
@@ -15,8 +15,8 @@ class UserMetricsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.SPECIFIC_USERS_LIST = [894035560623128576, 1085865858183737384, 273621738657415169]  
-        self.word_freqs = defaultdict(Counter2)
-        
+        self.word_freqs = defaultdict(Counter)
+
     async def update_metrics(self, user_id, metrics):
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(None, lambda: self.bot.supabase.table('user_metrics').upsert({'user_id': user_id, 'metrics': metrics}).execute())
