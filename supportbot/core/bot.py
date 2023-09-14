@@ -116,7 +116,7 @@ class SupportBot(commands.AutoShardedBot):
         self.new_forum_posts_counter = Counter('discord_new_forum_posts', 'Number of new posts in the forum channel')
 
         # new mods watch
-        self.specific_users_counter = Counter('discord_specific_users_activity', 'Activity count for specific users', ['user_id'])
+        self.specific_users_counter = Counter('discord_specific_users_activity', 'Activity count for specific users', ['user'])
 
         self.messages_per_user_counter = Counter('discord_messages_per_user', 'Number of messages per user', ['user'])
         self.messages_per_channel_counter = Counter('discord_messages_per_channel', 'Number of messages per channel', ['channel'])
@@ -239,10 +239,11 @@ class SupportBot(commands.AutoShardedBot):
         self.logger.info(f'{self.user.name} has connected to Discord!')
         try:
             for name, counter in self.prometheus_counters.items():
-                counter._value.set(await self.fetch_counter(name))
-            self.logger.info(f'Counters and Metrics Loaded, exporting to Prometheus')
-        except:
-            self.logger.error(f'Error occurred fetching counters!')
+                value = await self.fetch_counter(name)
+                counter._value.set(value)
+                self.logger.info(f'Counter {name} set to {value}')
+        except Exception as e:
+            self.logger.error(f'Error occurred fetching counter {name}. Details: {e}')
 
         specific_post_channel = self.get_channel(1102722546232729620)
         if specific_post_channel is None:
