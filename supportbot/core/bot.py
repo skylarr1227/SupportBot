@@ -144,6 +144,7 @@ class SupportBot(commands.AutoShardedBot):
             'discord_replies_per_user': self.replies_per_user_counter,
             'discord_messages_per_category': self.messages_per_category_counter,
             'discord_new_forum_posts': self.new_forum_posts_counter,
+            'discord_specific_users_activity': self.specific_users_counter
         }   
 
 
