@@ -111,6 +111,13 @@ class SupportBot(commands.AutoShardedBot):
         self.ACTIVE_USERS = Gauge('contest_active_users', 'Number of users active during a contest')
         self.ALERTS_SENT = Counter('contest_alerts_sent', 'Number of alerts sent by the bot')
         
+        ## support metrics for grafana
+        self.messages_per_category_counter = Counter('discord_messages_per_category', 'Number of messages per category', ['category'])
+        self.new_forum_posts_counter = Counter('discord_new_forum_posts', 'Number of new posts in the forum channel')
+
+        # new mods watch
+        self.specific_users_counter = Counter('discord_specific_users_activity', 'Activity count for specific users', ['user_id'])
+
         self.messages_per_user_counter = Counter('discord_messages_per_user', 'Number of messages per user', ['user'])
         self.messages_per_channel_counter = Counter('discord_messages_per_channel', 'Number of messages per channel', ['channel'])
         self.active_users_gauge = Gauge('discord_active_users', 'Number of active users')
@@ -134,7 +141,9 @@ class SupportBot(commands.AutoShardedBot):
             'discord_users_leaving': self.users_leaving_counter,
             'discord_messages_per_channel_per_day': self.messages_per_channel_per_day_counter,
             'discord_unique_users_per_channel': self.unique_users_per_channel_counter,
-            'discord_replies_per_user': self.replies_per_user_counter
+            'discord_replies_per_user': self.replies_per_user_counter,
+            'discord_messages_per_category': self.messages_per_category_counter,
+            'discord_new_forum_posts': self.new_forum_posts_counter,
         }   
 
 

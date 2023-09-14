@@ -6,14 +6,13 @@ import asyncio
 import postgrest.exceptions
 import logging
 
-
-
-
+categories = [980877639675949166,1030538756081590402,1077936033863323708,1026663023273844786]
+support_categories = [1109323625439445012,1109324122833567744,1043533890414968842,1088531848264683581]
 
 class UserMetricsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-      
+        self.SPECIFIC_USERS_LIST = [894035560623128576, 1085865858183737384, 273621738657415169]  
         
     async def update_metrics(self, user_id, metrics):
         loop = asyncio.get_event_loop()
@@ -36,15 +35,25 @@ class UserMetricsCog(commands.Cog):
                 return rank
         return "Novice"  # Default rank if points are somehow negative
 
+
+
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if isinstance(message.channel, discord.DMChannel):
             return
+        if message.channel.category in categories:
+            self.bot.messages_per_category_counter.labels(category=message.channel.category.name).inc()
         # Check for specific server ID and bot messages
         if message.guild.id == 774124295026376755:
             if message.author.bot:
                 return
-            self.bot.messages_per_user_counter.labels(user=str(message.author.id)).inc()
+            if str(message.author.id) in self.SPECIFIC_USERS_LIST:
+                self.bot.specific_users_counter.labels(user_id=str(message.author.name)).inc()
+            specific_forum_channel_ids = support_categories
+            if message.channel.id in specific_forum_channel_ids and isinstance(message.channel, discord.Thread) and message.type == discord.MessageType.default:
+                self.bot.new_forum_posts_counter.inc()
+            self.bot.messages_per_user_counter.labels(user=str(message.author.name)).inc()
             self.bot.messages_per_channel_counter.labels(channel=message.channel.name).inc()
             await self.bot.increment_counter("messages_per_user_counter")
             await self.bot.increment_counter("messages_per_channel_counter")
@@ -55,7 +64,7 @@ class UserMetricsCog(commands.Cog):
             await self.bot.increment_counter("unique_users_per_channel_counter")
             # User Engagement Metrics
             if message.reference:
-                self.bot.replies_per_user_counter.labels(user=str(message.author.id)).inc()
+                self.bot.replies_per_user_counter.labels(user=str(message.author.name)).inc()
                 await self.bot.increment_counter("replies_per_user_counter")
         if message.guild.id != 914705867855773746 or message.author.bot:
             return
