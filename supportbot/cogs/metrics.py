@@ -56,7 +56,7 @@ class UserMetricsCog(commands.Cog):
                 self.bot.specific_users_counter.labels(user=str(message.author.name)).inc() 
                 words = message.content.split()
                 for word in words:
-                    self.bot.word_counters.labels(user=message.author.name, word=word).inc()
+                    self.word_frequency_counter.labels(user=message.author.name, word=word).inc()
             if message.channel.id in support_categories and isinstance(message.channel, discord.Thread):
                 parent_channel_name = message.channel.parent.name
                 self.bot.new_forum_posts_counter.labels(channel_name=parent_channel_name).inc()
