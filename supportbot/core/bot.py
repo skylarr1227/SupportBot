@@ -121,13 +121,13 @@ class SupportBot(commands.AutoShardedBot):
 
         # new mods watch
         self.specific_users_counter = PCounter('discord_specific_users_activity', 'Activity count for specific users', ['user'])
-        self.USER1_WORD_COUNTER = PCounter('discord_user1_top_words', 'Top 25 words for user1', ['word'])
-        self.USER2_WORD_COUNTER = PCounter('discord_user2_top_words', 'Top 25 words for user2', ['word'])
-        self.USER3_WORD_COUNTER = PCounter('discord_user3_top_words', 'Top 25 words for user3', ['word'])
+        #self.USER1_WORD_COUNTER = PCounter('discord_user1_top_words', 'Top 25 words for user1', ['word'])
+        #self.USER2_WORD_COUNTER = PCounter('discord_user2_top_words', 'Top 25 words for user2', ['word'])
+        #self.USER3_WORD_COUNTER = PCounter('discord_user3_top_words', 'Top 25 words for user3', ['word'])
         self.word_counters = {
-            "paul_the_grumpy_old_man": PCounter(name="Paul", documentation="Word stats"),
-            "toothy_smile": PCounter(name="Lou", documentation="Word stats"),
-            "dragonflymage": PCounter(name="Dragonfly", documentation="Word stats")
+            "paul_the_grumpy_old_man": PCounter('discord_word_frequency', 'Frequency of each word by user', ['user', 'word']),
+            "toothy_smile": PCounter('discord_word_frequency', 'Frequency of each word by user', ['user', 'word']),
+            "dragonflymage": PCounter('discord_word_frequency', 'Frequency of each word by user', ['user', 'word'])
         }
         
 
