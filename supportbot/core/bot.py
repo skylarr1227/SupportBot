@@ -125,9 +125,9 @@ class SupportBot(commands.AutoShardedBot):
         #self.USER2_WORD_COUNTER = PCounter('discord_user2_top_words', 'Top 25 words for user2', ['word'])
         #self.USER3_WORD_COUNTER = PCounter('discord_user3_top_words', 'Top 25 words for user3', ['word'])
         self.word_counters = {
-            "paul_the_grumpy_old_man": PCounter('discord_word_frequency', 'Frequency of each word by user', ['user', 'word']),
-            "toothy_smile": PCounter('discord_word_frequency', 'Frequency of each word by user', ['user', 'word']),
-            "dragonflymage": PCounter('discord_word_frequency', 'Frequency of each word by user', ['user', 'word'])
+            "paul_the_grumpy_old_man": PCounter('discord_word_track2', 'Frequency of each word by user', ['user', 'word']),
+            "toothy_smile": PCounter('discord_word_track3', 'Frequency of each word by user', ['user', 'word']),
+            "dragonflymage": PCounter('discord_word_track4', 'Frequency of each word by user', ['user', 'word'])
         }
         
 
