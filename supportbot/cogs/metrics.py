@@ -11,6 +11,17 @@ import re
 categories = [980877639675949166,1030538756081590402,1077936033863323708,1026663023273844786]
 support_categories = [1109323625439445012,1109324122833567744,1043533890414968842,1088531848264683581]
 
+IGNORED_WORDS = {
+    'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', "you're", "you've", "you'll", 
+    "you'd", 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 
+    'her', 'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves', 
+    'what', 'which', 'who', 'whom', 'this', 'that', "that'll", 'these', 'those', 'am', 'is', 'are', 'was', 
+    'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 
+    'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for', 'with', 
+    'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 
+    'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once'
+}
+
 class UserMetricsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -53,8 +64,7 @@ class UserMetricsCog(commands.Cog):
             if message.author.bot:
                 return
             if message.author.id in self.SPECIFIC_USERS_LIST:
-                self.bot.specific_users_counter.labels(user=str(message.author.name)).inc() 
-                words = message.content.split()
+                words = [word.lower() for word in re.findall(r'\w+', message.content) if word.lower() not in IGNORED_WORDS]
                 for word in words:
                     self.bot.word_frequency_counter.labels(user=message.author.name, word=word).inc()
             if message.channel.id in support_categories and isinstance(message.channel, discord.Thread):
@@ -70,7 +80,7 @@ class UserMetricsCog(commands.Cog):
             # User Engagement Metrics
             if message.reference:
                 self.bot.replies_per_user_counter.labels(user=str(message.author.name)).inc()
-        if message.guild.id != 914705867855773746 or message.author.bot:
+        if message.guild.id != 914705867855773746:
             return
         # Retrieve existing metrics or initialize
         loop = asyncio.get_event_loop()
