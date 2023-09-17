@@ -83,5 +83,12 @@ class ImageCollage(commands.Cog):
 
         return collage_img, collage_draw
 
+    def _convert_to_pil(self, images_data):
+        """
+        Convert bytes images to PIL images.
+        """
+        return [Image.open(io.BytesIO(img_data)).convert('RGBA') for img_data in images_data]
+
+
 async def setup(bot):
     await bot.add_cog(ImageCollage(bot))
