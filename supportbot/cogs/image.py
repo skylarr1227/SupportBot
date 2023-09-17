@@ -65,7 +65,7 @@ class ImageCollage(commands.Cog):
         collage_draw = ImageDraw.Draw(collage_img)
 
         # Load a font for numbering
-        font = ImageFont.truetype("arial.ttf", 15)
+        font = ImageFont.load_default()
 
         x_offset, y_offset = 0, 0
         image_counter = 0
