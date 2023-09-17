@@ -51,6 +51,22 @@ class UserMetricsCog(commands.Cog):
 
 
 
+    @commands.Cog.listener()
+    async def on_message_delete(self, message):
+       if message.author.id in self.SPECIFIC_USERS_LIST:
+           self.bot.messages_deleted_counter.labels(user=str(message.author.name)).inc()
+
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before, after):
+        # Check if the member was timed out
+        logs = await after.guild.audit_logs(limit=1, action=discord.AuditLogAction.member_timed_out).flatten()
+        if logs:
+            log_entry = logs[0]
+            if log_entry.user.id in self.SPECIFIC_USERS_LIST:
+                self.bot.timeouts_applied_counter.labels(user=str(log_entry.user.name)).inc()
+
+
 
     @commands.Cog.listener()
     async def on_message(self, message):
