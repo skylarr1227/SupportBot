@@ -57,7 +57,8 @@ class ImageCollage(commands.Cog):
 
         # Calculate the total width and height of the collage
         collage_width = sum(img.width for img in images[:cols])
-        collage_height = sum(img.height for img in images[i::cols][0] for i in range(rows))
+        collage_height = sum(images[i::cols][0].height for i in range(rows))
+
 
         # Create a blank white collage image
         collage_img = Image.new('RGBA', (collage_width, collage_height), (255, 255, 255, 255))
