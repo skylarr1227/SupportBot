@@ -2,6 +2,7 @@ from discord.ext import commands
 from collections import defaultdict
 from collections import Counter as Counter
 from datetime import datetime
+from supportbot.core.utils import team, support
 import discord
 import asyncio
 import postgrest.exceptions
@@ -53,8 +54,14 @@ class UserMetricsCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
-       if message.author.id in self.SPECIFIC_USERS_LIST:
-           self.bot.messages_deleted_counter.labels(user=str(message.author.name)).inc()
+        try:
+            if not isinstance(message, discord.Message):
+                return
+            if message.author.bot:
+                return
+            self.bot.messages_deleted_counter.labels(user=str(message.author.name)).inc()
+        except Exception as e:
+            print(f"Error in on_message_delete: {e}")
 
 
     @commands.Cog.listener()
@@ -63,7 +70,7 @@ class UserMetricsCog(commands.Cog):
         logs = await after.guild.audit_logs(limit=1, action=discord.AuditLogAction.member_timed_out).flatten()
         if logs:
             log_entry = logs[0]
-            if log_entry.user.id in self.SPECIFIC_USERS_LIST:
+            if log_entry.user.id:
                 self.bot.timeouts_applied_counter.labels(user=str(log_entry.user.name)).inc()
 
 
@@ -83,10 +90,11 @@ class UserMetricsCog(commands.Cog):
                 words = [word.lower() for word in re.findall(r'\w+', message.content) if word.lower() not in IGNORED_WORDS]
                 for word in words:
                     self.bot.word_frequency_counter.labels(user=message.author.name, word=word).inc()
+                    self.bot.messages_per_user_counter.labels(user=str(message.author.name)).inc()
             if message.channel.id in support_categories and isinstance(message.channel, discord.Thread):
                 parent_channel_name = message.channel.parent.name
                 self.bot.new_forum_posts_counter.labels(channel_name=parent_channel_name).inc()
-            self.bot.messages_per_user_counter.labels(user=str(message.author.name)).inc()
+            
             self.bot.messages_per_channel_counter.labels(channel=message.channel.name).inc()
 
             # Channel Activity Metrics
@@ -147,16 +155,21 @@ class UserMetricsCog(commands.Cog):
     
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        if member.guild.id == 774124295026376755:
-            self.bot.active_users_gauge.inc()
-            self.bot.new_users_counter.inc()
-      
+        try:
+            if member.guild.id == 774124295026376755:
+                self.bot.active_users_gauge.set(len(member.guild.members))
+                self.bot.new_users_counter.inc()
+        except Exception as e:
+            print(f"Error in on_member_join: {e}")
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        if member.guild.id == 774124295026376755:
-            self.bot.active_users_gauge.dec()
-            self.bot.users_leaving_counter.inc()
+        try:
+            if member.guild.id == 774124295026376755:
+                self.bot.active_users_gauge.set(len(member.guild.members))
+                self.bot.users_leaving_counter.inc()
+        except Exception as e:
+            print(f"Error in on_member_remove: {e}")
        
 
 
@@ -181,6 +194,7 @@ class UserMetricsCog(commands.Cog):
             await loop.run_in_executor(None, insert_query)
             return {'metrics': metrics}
 
+    @team()
     @commands.command(name='mod-metrics')
     async def update_word_metrics_command(self, ctx):
         await self.update_prometheus_metrics()
