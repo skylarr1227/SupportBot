@@ -53,7 +53,7 @@ class UserMetricsCog(commands.Cog):
 
 
     @commands.Cog.listener()
-    async def on_message_delete(self, message):
+    async def on_raw_message_delete(self, message):
         try:
             if not isinstance(message, discord.Message):
                 return

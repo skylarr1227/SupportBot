@@ -114,7 +114,7 @@ class SupportBot(commands.AutoShardedBot):
         self.word_frequency_counter = PCounter('discord_words', 'Frequency of each word by user', ['user', 'word'])
         self.messages_deleted_counter = PCounter('discord_deleted', 'Number of messages deleted by specific users', ['user'])
         #self.timeouts_applied_counter = PCounter('discord_timeouts', 'Number of timeouts applied by specific users', ['user'])
-
+        self.active_users_gauge = Gauge('discord_active_users', 'Number of active users')
         self.messages_per_user_counter = PCounter('discord_messages_per_user', 'Number of messages per user', ['user'])
         self.messages_per_channel_counter = PCounter('discord_messages_per_channel', 'Number of messages per channel', ['channel'])
 
