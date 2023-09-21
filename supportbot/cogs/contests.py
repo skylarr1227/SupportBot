@@ -165,7 +165,7 @@ class Contests(commands.Cog):
                 else:
                     if reply.content.lower() == 'yes' and self.accepting_images:
                         await connection.execute('INSERT INTO artwork(submitted_by, submitted_on, message_id, upvotes, inspected_by) VALUES($1, $2, $3, $4, $5)', user_id, int(now.timestamp()), None, 0, None)
-                        self.bot.SUBMITTED_TRACK.inc()
+                        #self.bot.SUBMITTED_TRACK.inc()
                         await connection.execute('UPDATE users SET submitted = $1 WHERE u_id = $2', int(now.timestamp()), user_id)
                         await self.inspect_image(user_id, message.attachments[0].url)
                         await message.author.send('Your image has been submitted for manual inspection.')
@@ -199,7 +199,7 @@ class Contests(commands.Cog):
                         # DENY
                         await connection.execute('DELETE FROM artwork WHERE submitted_by = $1', user_id)
                         await logging_channel.send(f"👎 <@{user_id}>, your image has been denied.")
-                        self.bot.SUBMITTED_TRACK.dec()
+                        #self.bot.SUBMITTED_TRACK.dec()
                     # Clear the reactions after inspection
                     await message.clear_reactions()
 
@@ -341,7 +341,7 @@ class Contests(commands.Cog):
 
             self.phase_message = await theme_channel.send("Initializing contest phase...")
             await self.update_phase()
-            self.bot.TOTAL_CONTESTS.inc()
+            #self.bot.TOTAL_CONTESTS.inc()
             print("Contest initialized")
         except Exception as e:
             print(f"Failed to initialize contest: {e}")
@@ -449,7 +449,7 @@ class Contests(commands.Cog):
             if current_phase != last_phase:
                 await self.update_phase()
                 if "Downtime" in current_phase and not downtime_message_sent:
-                    self.bot.SUBMITTED_TRACK.set(0)
+                    #self.bot.SUBMITTED_TRACK.set(0)
                     await theme_channel.send("The contest has ended for today. Enjoy a few hours of downtime!")
                     downtime_message_sent = True
                 last_phase = current_phase
