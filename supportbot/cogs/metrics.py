@@ -79,8 +79,6 @@ class UserMetricsCog(commands.Cog):
     async def on_message(self, message):
         if isinstance(message.channel, discord.DMChannel):
             return
-        if message.channel.category in categories:
-            self.bot.messages_per_category_counter.labels(category=message.channel.category.name).inc()
         # Check for specific server ID and bot messages
         if message.guild.id == 774124295026376755:
             
@@ -92,16 +90,8 @@ class UserMetricsCog(commands.Cog):
                     self.bot.word_frequency_counter.labels(user=message.author.name, word=word).inc()
                     self.bot.messages_per_user_counter.labels(user=str(message.author.name)).inc()
                     self.bot.messages_per_channel_per_day_counter.labels(channel=message.channel.name, date=datetime.today().strftime('%Y-%m-%d')).inc()
-            if message.channel.id in support_categories and isinstance(message.channel, discord.Thread):
-                parent_channel_name = message.channel.parent.name
-                self.bot.new_forum_posts_counter.labels(channel_name=parent_channel_name).inc()
-            
             self.bot.messages_per_channel_counter.labels(channel=message.channel.name).inc()
-
-            # Channel Activity Metrics
-            
             self.bot.unique_users_per_channel_counter.labels(channel=message.channel.name).inc()
-
             # User Engagement Metrics
             if message.reference:
                 self.bot.replies_per_user_counter.labels(user=str(message.author.name)).inc()

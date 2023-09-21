@@ -75,7 +75,7 @@ class ImageCollage(commands.Cog):
         collage_draw = ImageDraw.Draw(collage_img)
 
         # Load a font for numbering
-        font = ImageFont.truetype("futur.ttf", 25)
+        font = ImageFont.truetype("/home/ubuntu/s/SupportBot/supportbot/futur.ttf", 25)
 
         x_offset, y_offset = 0, 0
         image_counter = 0

@@ -26,6 +26,7 @@ intents = discord.Intents.default()
 intents.messages = True
 intents.reactions = True
 intents.guilds = True
+intents.members = True
 intents.message_content = True
 
 async def get_prefix(bot, message):
@@ -105,20 +106,8 @@ class SupportBot(commands.AutoShardedBot):
         self.OPENAI_KEY = OPENAI_KEY
         self.SPECIFIC_POST_CHANNEL_ID = 1102722546232729620
         #self.openai = openai.api_key
-        
-        self.SUBMITTED_TRACK = Gauge('image_submissions', 'Number of image submissions for the daily contest')
-        self.TOTAL_CONTESTS = PCounter('contest_total', 'Total number of contests held')
-        self.TOTAL_SPECIAL_CONTESTS = PCounter('contest_total_special', 'Total number of special contests held')
-        self.TOTAL_VOTES_CAST = PCounter('contest_total_votes_cast', 'Total number of votes cast during contests')
-        self.TOTAL_SUBMISSIONS = PCounter('contest_total_submissions', 'Total number of submissions for each contest')
-        self.ACTIVE_USERS = Gauge('contest_active_users', 'Number of users active during a contest')
-        self.ALERTS_SENT = PCounter('contest_alerts_sent', 'Number of alerts sent by the bot')
-        
-        ## support metrics for grafana
-        self.messages_per_category_counter = PCounter('discord_messages_per_category', 'Number of messages per category', ['category'])
-        self.new_forum_posts_counter = PCounter('discord_new_forum_posts', 'Number of new posts in the forum channel', ['channel_name'])
-
-
+        self.new_users_counter = PCounter('discord_new_users', 'Number of new users')
+        self.users_leaving_counter = PCounter('discord_users_leaving', 'Number of users leaving')
         # new mods watch
         self.specific_users_counter = PCounter('discord_specific_users_activity', 'Activity count for specific users', ['user'])
         # Initialize the word frequency counter
@@ -126,41 +115,14 @@ class SupportBot(commands.AutoShardedBot):
         self.messages_deleted_counter = PCounter('discord_deleted', 'Number of messages deleted by specific users', ['user'])
         self.timeouts_applied_counter = PCounter('discord_timeouts', 'Number of timeouts applied by specific users', ['user'])
 
-        
-
         self.messages_per_user_counter = PCounter('discord_messages_per_user', 'Number of messages per user', ['user'])
         self.messages_per_channel_counter = PCounter('discord_messages_per_channel', 'Number of messages per channel', ['channel'])
-        self.active_users_gauge = Gauge('discord_active_users', 'Number of active users')
-        self.new_users_counter = PCounter('discord_new_users', 'Number of new users')
-        self.users_leaving_counter = PCounter('discord_users_leaving', 'Number of users leaving')
+
         self.messages_per_channel_per_day_counter = PCounter('discord_messages_per_channel_per_day', 'Number of messages per day per channel', ['channel', 'date'])
         self.unique_users_per_channel_counter = PCounter('discord_unique_users_per_channel', 'Number of unique users per channel', ['channel'])
         self.replies_per_user_counter = PCounter('discord_replies_per_user', 'Number of replies per user', ['user'])
-        #self.prometheus_counters = {
-        #    'image_submissions': self.SUBMITTED_TRACK,
-        #    'contest_total': self.TOTAL_CONTESTS,
-        #    'contest_total_special': self.TOTAL_SPECIAL_CONTESTS,
-        #    'contest_total_votes_cast': self.TOTAL_VOTES_CAST,
-        #    'contest_total_submissions': self.TOTAL_SUBMISSIONS,
-        #    'contest_active_users': self.ACTIVE_USERS,
-        #    'contest_alerts_sent': self.ALERTS_SENT,
-        #    'discord_messages_per_user': self.messages_per_user_counter,
-        #    'discord_messages_per_channel': self.messages_per_channel_counter,
-        #    'discord_active_users': self.active_users_gauge,
-        #    'discord_new_users': self.new_users_counter,
-        #    'discord_users_leaving': self.users_leaving_counter,
-        #    'discord_messages_per_channel_per_day': self.messages_per_channel_per_day_counter,
-        #    'discord_unique_users_per_channel': self.unique_users_per_channel_counter,
-        #    'discord_replies_per_user': self.replies_per_user_counter,
-        #    'discord_messages_per_category': self.messages_per_category_counter,
-        #    'discord_new_forum_posts': self.new_forum_posts_counter,
-        #    'discord_specific_users_activity': self.specific_users_counter
-        #}   
 
 
-
-
-  
 
 
     async def create_pool(self):
