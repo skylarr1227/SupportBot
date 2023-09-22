@@ -110,10 +110,10 @@ class SupportBot(commands.AutoShardedBot):
         self.users_leaving_counter = PCounter('discord_users_leaving', 'Number of users leaving')
         # new mods watch
         self.specific_users_counter = PCounter('discord_specific_users_activity', 'Activity count for specific users', ['user'])
-        self.mod_bans_counter = PCounter('discord_mod_bans', 'Count of actions taken by mods', ['mod_name', 'action'])
-        self.mod_mutes_counter = PCounter('discord_mod_mutes', 'Count of actions taken by mods', ['mod_name', 'action'])
-        self.mod_warns_counter = PCounter('discord_mod_warns', 'Count of actions taken by mods', ['mod_name', 'action'])
-
+        self.mod_bans_gauge = Gauge('discord_mod_bans', 'Count of actions taken by mods', ['mod_name', 'action'])
+        self.mod_mutes_gauge = Gauge('discord_mod_mutes', 'Count of actions taken by mods', ['mod_name', 'action'])
+        self.mod_warns_gauge = Gauge('discord_mod_warns', 'Count of actions taken by mods', ['mod_name', 'action'])
+       
 
         # Initialize the word frequency counter
         self.word_frequency_counter = PCounter('discord_words', 'Frequency of each word by user', ['user', 'word'])

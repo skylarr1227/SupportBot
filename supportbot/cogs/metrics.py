@@ -81,7 +81,34 @@ class UserMetricsCog(commands.Cog):
             return
         # Check for specific server ID and bot messages
         if message.guild.id == 774124295026376755:
-            
+            # MOD BANS
+            if message.channel.id == 1026904617054916738:  
+                match = re.search(r'^(?P<action>\w+) .+\nUser: .+\nReason: .+\nDuration: .+', message.content)
+                footer_match = re.search(r'@(?P<mod_name>.+)•', message.embeds[0].footer.text if message.embeds else "")
+                if match and footer_match:
+                    action = match.group('action')
+                    mod_name = footer_match.group('mod_name')
+                    
+                    self.bot.mod_bans_gauge.labels(mod_name=mod_name, action=action).inc()
+                    print(f"+1 {action} for {mod_name}")
+            # MOD MUTES
+            elif message.channel.id == 1026904822286389328:  
+                match = re.search(r'^(?P<action>\w+) .+\nUser: .+\nReason: .+\nDuration: .+', message.content)
+                footer_match = re.search(r'@(?P<mod_name>.+)•', message.embeds[0].footer.text if message.embeds else "")
+                if match and footer_match:
+                    action = match.group('action')
+                    mod_name = footer_match.group('mod_name')
+                    self.bot.mod_mutes_gauge.labels(mod_name=mod_name, action=action).inc()
+                    print(f"+1 {action} for {mod_name}")
+            # MOD WARNS
+            elif message.channel.id == 1026904942910378064:
+                match = re.search(r'^(?P<action>\w+) .+\nUser: .+\nReason: .+\nDuration: .+', message.content)
+                footer_match = re.search(r'@(?P<mod_name>.+)•', message.embeds[0].footer.text if message.embeds else "")
+                if match and footer_match:
+                    action = match.group('action')
+                    mod_name = footer_match.group('mod_name')
+                    self.bot.mod_warns_gauge.labels(mod_name=mod_name, action=action).inc()
+                    print(f"+1 {action} for {mod_name}")
             if message.author.bot:
                 return
             if message.author.id in self.SPECIFIC_USERS_LIST:
@@ -96,30 +123,7 @@ class UserMetricsCog(commands.Cog):
             if message.reference:
                 self.bot.replies_per_user_counter.labels(user=str(message.author.name)).inc()
             
-            # MOD BANS
-            if message.channel.id == 1026904617054916738:  
-                match = re.search(r'^(?P<action>\w+) .+\nUser: .+\nReason: .+\nDuration: .+', message.content)
-                footer_match = re.search(r'@(?P<mod_name>.+)•', message.embeds[0].footer.text if message.embeds else "")
-                if match and footer_match:
-                    action = match.group('action')
-                    mod_name = footer_match.group('mod_name')
-                    self.bot.mod_bans_counter.labels(mod_name=mod_name, action=action).inc()
-            # MOD MUTES
-            elif message.channel.id == 1026904822286389328:  
-                match = re.search(r'^(?P<action>\w+) .+\nUser: .+\nReason: .+\nDuration: .+', message.content)
-                footer_match = re.search(r'@(?P<mod_name>.+)•', message.embeds[0].footer.text if message.embeds else "")
-                if match and footer_match:
-                    action = match.group('action')
-                    mod_name = footer_match.group('mod_name')
-                    self.bot.mod_mutes_counter.labels(mod_name=mod_name, action=action).inc()
-            # MOD WARNS
-            elif message.channel.id == 1026904942910378064:
-                match = re.search(r'^(?P<action>\w+) .+\nUser: .+\nReason: .+\nDuration: .+', message.content)
-                footer_match = re.search(r'@(?P<mod_name>.+)•', message.embeds[0].footer.text if message.embeds else "")
-                if match and footer_match:
-                    action = match.group('action')
-                    mod_name = footer_match.group('mod_name')
-                    self.bot.mod_warns_counter.labels(mod_name=mod_name, action=action).inc()
+            
 
 
         if message.guild.id != 914705867855773746:
