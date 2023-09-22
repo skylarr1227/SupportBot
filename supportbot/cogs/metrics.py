@@ -95,6 +95,33 @@ class UserMetricsCog(commands.Cog):
             # User Engagement Metrics
             if message.reference:
                 self.bot.replies_per_user_counter.labels(user=str(message.author.name)).inc()
+            
+            # MOD BANS
+            if message.channel.id == 1026904617054916738:  
+                match = re.search(r'^(?P<action>\w+) .+\nUser: .+\nReason: .+\nDuration: .+', message.content)
+                footer_match = re.search(r'@(?P<mod_name>.+)•', message.embeds[0].footer.text if message.embeds else "")
+                if match and footer_match:
+                    action = match.group('action')
+                    mod_name = footer_match.group('mod_name')
+                    self.bot.mod_bans_counter.labels(mod_name=mod_name, action=action).inc()
+            # MOD MUTES
+            elif message.channel.id == 1026904822286389328:  
+                match = re.search(r'^(?P<action>\w+) .+\nUser: .+\nReason: .+\nDuration: .+', message.content)
+                footer_match = re.search(r'@(?P<mod_name>.+)•', message.embeds[0].footer.text if message.embeds else "")
+                if match and footer_match:
+                    action = match.group('action')
+                    mod_name = footer_match.group('mod_name')
+                    self.bot.mod_mutes_counter.labels(mod_name=mod_name, action=action).inc()
+            # MOD WARNS
+            elif message.channel.id == 1026904942910378064:
+                match = re.search(r'^(?P<action>\w+) .+\nUser: .+\nReason: .+\nDuration: .+', message.content)
+                footer_match = re.search(r'@(?P<mod_name>.+)•', message.embeds[0].footer.text if message.embeds else "")
+                if match and footer_match:
+                    action = match.group('action')
+                    mod_name = footer_match.group('mod_name')
+                    self.bot.mod_warns_counter.labels(mod_name=mod_name, action=action).inc()
+
+
         if message.guild.id != 914705867855773746:
             return
         # Retrieve existing metrics or initialize
