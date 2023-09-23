@@ -113,10 +113,15 @@ class SupportBot(commands.AutoShardedBot):
         self.mod_bans_gauge = Gauge('discord_mod_bans', 'Count of actions taken by mods', ['mod_name', 'action'])
         self.mod_mutes_gauge = Gauge('discord_mod_mutes', 'Count of actions taken by mods', ['mod_name', 'action'])
         self.mod_warns_gauge = Gauge('discord_mod_warns', 'Count of actions taken by mods', ['mod_name', 'action'])
-       
+        self.word_counters = {
+            "894035560623128576": PCounter(),
+            "1085865858183737384": PCounter(),
+            "273621738657415169": PCounter()
+        }
+        self.top_words_gauge = Gauge('discord_top_words', 'Top 25 words said in the last 10 minutes by specific users', ['user', 'word'])
 
         # Initialize the word frequency counter
-        self.word_frequency_counter = PCounter('discord_words', 'Frequency of each word by user', ['user', 'word'])
+        
         self.messages_deleted_counter = PCounter('discord_deleted', 'Number of messages deleted by specific users', ['user'])
         #self.timeouts_applied_counter = PCounter('discord_timeouts', 'Number of timeouts applied by specific users', ['user'])
         self.active_users_gauge = Gauge('discord_active_users', 'Number of active users')

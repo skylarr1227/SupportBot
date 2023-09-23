@@ -28,6 +28,8 @@ class UserMetricsCog(commands.Cog):
         self.bot = bot
         self.SPECIFIC_USERS_LIST = [894035560623128576, 1085865858183737384, 273621738657415169]  
         self.word_freqs = defaultdict(Counter)
+        #self.loop.create_task(self.update_top_words())
+        self.tasks.append(self.bot.loop.create_task(self.update_top_words()))
 
     async def update_metrics(self, user_id, metrics):
         loop = asyncio.get_event_loop()
@@ -75,6 +77,21 @@ class UserMetricsCog(commands.Cog):
 #
 #
 
+    async def update_top_words(self):
+        while True:
+            # Wait for 10 minutes
+            await asyncio.sleep(600)
+            # Get the top 25 most common words for each user
+            for user_id, counter in self.bot.word_counters.items():
+                top_25_words = counter.most_common(25)
+                # Update the Prometheus gauge
+                for word, count in top_25_words:
+                    self.bot.top_words_gauge.labels(user=user_id, word=word).set(count)
+                # Clear the counter for the next interval
+                counter.clear()
+
+
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if isinstance(message.channel, discord.DMChannel):
@@ -110,12 +127,9 @@ class UserMetricsCog(commands.Cog):
                         print(f"+1 {action} for {mod_name}")
             if message.author.bot:
                 return
-            if message.author.id in self.SPECIFIC_USERS_LIST:
-                words = [word.lower() for word in re.findall(r'\w+', message.content) if word.lower() not in IGNORED_WORDS]
-                for word in words:
-                    self.bot.word_frequency_counter.labels(user=message.author.name, word=word).inc()
-                    self.bot.messages_per_user_counter.labels(user=str(message.author.name)).inc()
-                    self.bot.messages_per_channel_per_day_counter.labels(channel=message.channel.name, date=datetime.today().strftime('%Y-%m-%d')).inc()
+            if str(message.author.id) in self.bot.word_counters:
+                words = message.content.split()
+                self.bot.word_counters[str(message.author.id)].update(words)
             self.bot.messages_per_channel_counter.labels(channel=message.channel.name).inc()
             self.bot.unique_users_per_channel_counter.labels(channel=message.channel.name).inc()
             # User Engagement Metrics
