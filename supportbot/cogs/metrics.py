@@ -105,7 +105,7 @@ class UserMetricsCog(commands.Cog):
                     for embed in message.embeds:
                         print(embed.footer)
                         action = "Ban"
-                        mod_name = embed.footer
+                        mod_name = embed.footer.text
                         self.bot.mod_bans_gauge.labels(mod_name=mod_name, action=action).inc()
                         print(f"+1 {action} for {mod_name}")
             # MOD MUTES
@@ -114,7 +114,7 @@ class UserMetricsCog(commands.Cog):
                     for embed in message.embeds:
                         print(embed.footer)
                         action = "Mute"
-                        mod_name = embed.footer
+                        mod_name = embed.footer.text
                         self.bot.mod_mutes_gauge.labels(mod_name=mod_name, action=action).inc()
                         print(f"+1 {action} for {mod_name}")
             # MOD WARNS
@@ -123,7 +123,7 @@ class UserMetricsCog(commands.Cog):
                     for embed in message.embeds:
                         print(embed.footer)
                         action = "Warn"
-                        mod_name = embed.footer
+                        mod_name = embed.footer.text
                         self.bot.mod_warns_gauge.labels(mod_name=mod_name, action=action).inc()
                         print(f"+1 {action} for {mod_name}")
             if message.author.bot:
