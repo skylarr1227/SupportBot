@@ -28,6 +28,7 @@ class UserMetricsCog(commands.Cog):
         self.bot = bot
         self.SPECIFIC_USERS_LIST = [894035560623128576, 1085865858183737384, 273621738657415169]  
         self.word_freqs = defaultdict(Counter)
+        self.tasks = []
         #self.loop.create_task(self.update_top_words())
         self.tasks.append(self.bot.loop.create_task(self.update_top_words()))
 
