@@ -114,8 +114,8 @@ class SupportBot(commands.AutoShardedBot):
         self.mod_mutes_gauge = Gauge('discord_mod_mutes', 'Count of actions taken by mods', ['mod_name', 'action'])
         self.mod_warns_gauge = Gauge('discord_mod_warns', 'Count of actions taken by mods', ['mod_name', 'action'])
         self.word_counters = {
-            "894035560623128576": PCounter('Lou', 'Word counter'),
-            "1085865858183737384": PCounter('Paul', 'Word Counter')
+            "894035560623128576": Counter2(),
+            "1085865858183737384": Counter2()
         }
         self.top_words_gauge = Gauge('discord_top_words', 'Top 25 words said in the last 10 minutes by specific users', ['user', 'word'])
 
