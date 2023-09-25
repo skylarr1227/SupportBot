@@ -6,7 +6,6 @@ from discord.ext import commands
 import discord
 import functools
 from supportbot.core.utils import team
-from supportbot.core.bot import team
 import os
 import logging
 import asyncpg
