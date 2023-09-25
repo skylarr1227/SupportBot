@@ -53,7 +53,7 @@ class Todo(commands.Cog):
             task_name (str): The name of the task to add.
             project_id (int): The ID of the project to which the task will be added.
         """
-        url = 'https://api.todoist.com/rest/v1/tasks'
+        url = 'https://api.todoist.com/rest/v2/tasks'
         headers = {
             'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json'
@@ -81,7 +81,7 @@ class Todo(commands.Cog):
             list: A list of tasks.
         """
         # API endpoint for fetching tasks
-        url = f'https://api.todoist.com/rest/v1/tasks?project_id={project_id}'
+        url = f'https://api.todoist.com/rest/v2/tasks'
 
         # Headers for the HTTP request
         headers = {
