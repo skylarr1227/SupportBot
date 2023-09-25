@@ -44,7 +44,7 @@ class Todo(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
 
-    async def add_todoist_task(token,task_info):
+    async def add_todoist_task(self,token,task_info):
         """
         Adds a task to Todoist using aiohttp for asynchronous HTTP requests.
 
