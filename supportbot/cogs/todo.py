@@ -38,7 +38,7 @@ class Todo(commands.Cog):
         """View tasks."""
         token = TODOIST
         tasks = await self.get_todoist_tasks(token, 2320689199)  # Replace with your actual project ID
-        embed = Embed(title="Todoist Tasks", description="Here are the tasks from your todo list.", color=0x03f8fc)
+        embed = Embed(title="Tasks", description="Here are the tasks from your todo list.", color=0x03f8fc)
         task_list = "\n".join([f"- {task['content']}" for task in tasks])
         embed.description += f"\n\n{task_list}"
         await interaction.response.send_message(embed=embed)
