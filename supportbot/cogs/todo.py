@@ -81,7 +81,7 @@ class Todo(commands.Cog):
             list: A list of tasks.
         """
         # API endpoint for fetching tasks
-        url = f'https://api.todoist.com/rest/v2/tasks'
+        url = f'https://api.todoist.com/rest/v2/tasks?project_id={project_id}'
 
         # Headers for the HTTP request
         headers = {
