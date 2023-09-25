@@ -9,7 +9,7 @@ import aiohttp
 
 TODOIST='f8ecdbb2d7c78936b63fc9a1882e74a4ffb19ed9'
 
-class Contests(commands.Cog):
+class Todo(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -96,3 +96,5 @@ class Contests(commands.Cog):
                 else:
                     return []
 
+async def setup(bot):
+    await bot.add_cog(Todo(bot))
