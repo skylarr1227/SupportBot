@@ -63,6 +63,21 @@ class SupportBot(commands.AutoShardedBot):
         self.counters = {}
         SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY")
         self.SUPABASE_API_KEY = SUPABASE_API_KEY
+        self.WOMBO_VIP = [
+            221325529435865088, # Moofi
+            763878688180666448, # hamza
+            790722073248661525, # Skylarr
+            303293440223870987, # Vegeta
+            915262032037707816, # Mohoho
+            381887137362083841, # copied from teams below
+            149706927868215297, 
+            291970766419787788,
+            275092045671038986,
+            986262236479750174,
+            702554894032175246,
+            395788963475881985,
+            988106635874533467 # end of paste
+        ]
         self.WOMBO_TEAM = [
             790722073248661525,
             381887137362083841,

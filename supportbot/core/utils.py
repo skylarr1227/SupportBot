@@ -12,6 +12,12 @@ def support():
         return interaction.user.id in interaction.client.WOMBO_SUPPORT
     return app_commands.check(predicate)
 
+def vip():
+    def predicate(interaction):
+        return interaction.user.id in interaction.client.WOMBO_VIP
+    return app_commands.check(predicate)
+
+
 
 async def store_in_supabase(bot, old_status, new_status, thread, executor, author, original_message):
     payload = {

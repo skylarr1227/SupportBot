@@ -1,11 +1,16 @@
-from supportbot.core.utils import team
+from supportbot.core.utils import team, vip
 from discord import app_commands, Embed
 from discord.ext import commands
 import discord
 import json
 import aiohttp
+from enum import Enum
 
 
+class Options(Enum):
+    Critical = 1
+    Normal = 2 
+    Backlog = 3
 
 TODOIST='f8ecdbb2d7c78936b63fc9a1882e74a4ffb19ed9'
 
@@ -27,10 +32,45 @@ class Todo(commands.Cog):
         token = TODOIST
         result = await self.add_todoist_task(token, task_info)
         if result == 1:
-            await interaction.response.send_message("Task added successfully.")
+            await interaction.response.send_message("Task added successfully.", ephemeral=True)
         else:
-            await interaction.response.send_message("Failed to add task.")
+            await interaction.response.send_message("Failed to add task.", ephemeral=True)
 
+
+    @vip()
+    @app_commands.command()
+    @app_commands.describe(title="Short title of bug being added")
+    @app_commands.describe(desc="Important details about the bug")
+    async def addbug(self, interaction, title: str, desc: str, priority: Options = 2):
+        """Add a new bug to the list"""
+        task_info = {
+            'content': title,
+            'description': desc,
+            'project_id': 2320689619, 
+            'priority': priority,  
+        }
+        token = TODOIST
+        result = await self.add_todoist_task(token, task_info)
+        if result == 1:
+            await interaction.response.send_message("Bug added successfully.", ephemeral=True)
+        else:
+            await interaction.response.send_message("Failed to add bug.", ephemeral=True)
+
+
+    
+    @app_commands.command()
+    async def bugs(self, interaction):
+        """View bugs."""
+        if interaction.guild.id != 914705867855773746:
+            await interaction.response.send_message("This cannot be used in this server, sorry.", ephemeral=True)
+            return
+        else:
+            token = TODOIST
+            tasks = await self.get_todoist_tasks(token, 2320689199)  # Replace with your actual project ID
+            embed = Embed(title="Bugs", description="Here are the Bugs reported so far (cleaned up weekly).", color=0x03f8fc)
+            task_list = "\n".join([f"- {task['content']}" for task in tasks])
+            embed.description += f"\n\n{task_list}"
+            await interaction.response.send_message(embed=embed)
 
     @team()
     @app_commands.command()
