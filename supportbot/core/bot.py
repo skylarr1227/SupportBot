@@ -142,7 +142,7 @@ class SupportBot(commands.AutoShardedBot):
         self.active_users_gauge = Gauge('discord_active_users', 'Number of active users')
         self.messages_per_user_counter = PCounter('discord_messages_per_user', 'Number of messages per user', ['user'])
         self.messages_per_channel_counter = PCounter('discord_messages_per_channel', 'Number of messages per channel', ['channel'])
-
+        self.messages_per_channel_counter2 = PCounter('discord_messages_per_channel2', 'Number of messages per channel', ['channel'])
         self.messages_per_channel_per_day_counter = PCounter('discord_messages_per_channel_per_day', 'Number of messages per day per channel', ['channel', 'date'])
         self.unique_users_per_channel_counter = PCounter('discord_unique_users_per_channel', 'Number of unique users per channel', ['channel'])
         self.replies_per_user_counter = PCounter('discord_replies_per_user', 'Number of replies per user', ['user'])
