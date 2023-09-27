@@ -66,7 +66,7 @@ class Todo(commands.Cog):
             return
         else:
             token = TODOIST
-            tasks = await self.get_todoist_tasks(token, 2320689199)  # Replace with your actual project ID
+            tasks = await self.get_todoist_tasks(token, 2320689619) 
             embed = Embed(title="Bugs", description="Here are the Bugs reported so far (cleaned up weekly).", color=0x03f8fc)
             task_list = "\n".join([f"- {task['content']}" for task in tasks])
             embed.description += f"\n\n{task_list}"
