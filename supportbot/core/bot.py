@@ -69,6 +69,7 @@ class SupportBot(commands.AutoShardedBot):
             790722073248661525, # Skylarr
             303293440223870987, # Vegeta
             915262032037707816, # Mohoho
+            982768279397482526, #universalwidget
             381887137362083841, # copied from teams below
             149706927868215297, 
             291970766419787788,
