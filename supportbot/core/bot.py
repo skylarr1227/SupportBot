@@ -146,6 +146,8 @@ class SupportBot(commands.AutoShardedBot):
         self.messages_per_channel_per_day_counter = PCounter('discord_messages_per_channel_per_day', 'Number of messages per day per channel', ['channel', 'date'])
         self.unique_users_per_channel_counter = PCounter('discord_unique_users_per_channel', 'Number of unique users per channel', ['channel'])
         self.replies_per_user_counter = PCounter('discord_replies_per_user', 'Number of replies per user', ['user'])
+        self.TOTAL_CONTESTS = Gauge('total_contests', 'Total number of contests held')
+        self.SUBMITTED_TRACK = Gauge('submitted_track', 'Number of image submissions for the daily contest')
 
 
 
