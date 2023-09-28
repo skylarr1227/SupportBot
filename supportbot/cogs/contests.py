@@ -44,7 +44,7 @@ def generate_progress_bar(percentage):
         progress_bar = "╍" * total_slots
     return f"{progress_bar} {percentage}%"
 
-
+.set_offse4t
 
 class Contests(commands.Cog):
     def __init__(self, bot):
@@ -63,7 +63,7 @@ class Contests(commands.Cog):
         self.tasks.append(self.bot.loop.create_task(self.check_time()))
         self.tasks.append(self.bot.loop.create_task(self.count_votes()))
         self.THEME_CHANNEL_ID = 123
-
+        self.prev_day_theme_message = None
     ### Helper Functions
     
     async def inspect_image(self, user_id, image_url):
@@ -319,34 +319,21 @@ class Contests(commands.Cog):
             response = await self.bot.wait_for('message', check=lambda message: message.author == user)
             channel_id = int(response.content)
             self.THEME_CHANNEL_ID = channel_id
-            theme_channel = self.bot.get_channel(channel_id)
+            theme_channel = self.bot.get_channel(channel_id)    
+
             now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
-            # Fetching the 'is_special_week' value from the database
             current_week = now.isocalendar()[1]
             async with self.bot.pool.acquire() as connection:
                 row = await connection.fetchrow('SELECT special FROM contests WHERE week = $1', current_week)
-                is_special_week = row['special'] if row else False
-            # Check if today is a day with a contest
-            if now.weekday() in [0, 2] or (is_special_week and 0 <= now.weekday() < 5):  # Monday, Wednesday, or special contest day
-                theme = await self.get_theme()
-                day_of_week = calendar.day_name[now.weekday()].capitalize()
-                embed_title = f"{day_of_week}'s Contest of week {current_week}"
+                is_special_week = row['special'] if row else False  
 
-                # Create the embed object
-                embed = discord.Embed(title=embed_title, description=theme, color=0x3498db) 
-                # If it's a special contest day, modify the title and create or fetch the special channel
-                if is_special_week:
-                    embed_title = f"Special {embed_title}"
-                    category = discord.utils.get(self.bot.get_all_channels(), id=1148811216312090684) 
-                    special_channel_name = f"special-contest-{current_week}"
-                    special_channel = discord.utils.get(category.text_channels, name=special_channel_name)
-                    if not special_channel:
-                        special_channel = await category.create_text_channel(name=special_channel_name)
+            # Check if the phase message exists
+            if self.phase_message is None:
+                prev_day = now - timedelta(days=1)
+                prev_theme = await self.get_theme(target_date=prev_day)
+                prev_embed = discord.Embed(title="Previous Day's Theme", description=prev_theme, color=0xFF0000)
+                self.phase_message = await theme_channel.send(embed=prev_embed) 
 
-                    self.theme_message = await special_channel.send(embed=embed)
-                else:
-                    self.theme_message = await theme_channel.send(embed=embed)
-            self.phase_message = await theme_channel.send("Initializing contest phase...")
             await self.update_phase()
             self.bot.TOTAL_CONTESTS.inc()
             print("Contest initialized")
@@ -354,8 +341,16 @@ class Contests(commands.Cog):
             print(f"Failed to initialize contest: {e}")
 
 
+
     
     async def update_phase(self):
+        """
+        Updates the contest phase and sets the appropriate message and status flags.
+
+        This function checks the current time and day of the week to determine
+        what phase the contest is in. It also considers whether the current week
+        is a special week or a regular week to set the phase.
+        """
         now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
         current_phase = None
 
@@ -380,10 +375,9 @@ class Contests(commands.Cog):
         ### Regular Week Schedule 
         else:
             if now.weekday() == 0:  # Monday
-                if 0 <= now.hour < 24:  # 12:00am - 11:59pm
-                    current_phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"  # In Progress
-                    self.accepting_images = True
-                    self.STARTED = now
+                current_phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"  # In Progress
+                self.accepting_images = True
+                self.STARTED = now
             elif now.weekday() == 1:  # Tuesday
                 if 0 <= now.hour < 12:  # 12:00am - 11:59am
                     current_phase = "<:vote:1146208634322296923>"  # Voting
@@ -392,21 +386,21 @@ class Contests(commands.Cog):
                     current_phase = "<:down3:1146208635953873016><:down2:1146208638843748372>"  # Downtime
                     self.accepting_images = False
             elif now.weekday() == 2:  # Wednesday
-                if 0 <= now.hour < 24:  # 12:00am - 11:59pm
-                    current_phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"  # In Progress
-                    self.accepting_images = True
-                    self.STARTED = now
+                current_phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"  # In Progress
+                self.accepting_images = True
+                self.STARTED = now
             elif now.weekday() == 3:  # Thursday
                 if 0 <= now.hour < 12:  # 12:00am - 11:59am
                     current_phase = "<:vote:1146208634322296923>"  # Voting
                     self.accepting_images = False
                 else:
-                    current_phase = "<:d    own3:1146208635953873016><:down2:1146208638843748372>"  # Downtime
+                    current_phase = "<:down3:1146208635953873016><:down2:1146208638843748372>"  # Downtime
                     self.accepting_images = False
 
         # Update the current phase message
         if self.phase_message:
-            await self.phase_message.edit(content=f"{current_phase}") 
+            await self.phase_message.edit(content=f"{current_phase}")
+
 
 
 
