@@ -137,8 +137,8 @@ class UserMetricsCog(commands.Cog):
             self.bot.messages_per_channel_counter.labels(channel=message.channel.name).inc()
             self.bot.unique_users_per_channel_counter.labels(channel=message.channel.name).inc()
             # User Engagement Metrics
-            #if message.reference:
-            #    self.bot.replies_per_user_counter.labels(user=str(message.author.name)).inc()
+            if message.reference:
+               self.bot.replies_per_user_counter.labels(user=str(message.author.name)).inc()
             
             
 

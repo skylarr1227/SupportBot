@@ -20,7 +20,7 @@ handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(me
 logger.addHandler(handler)
 
 LOGGING_CHANNEL_ID = 1148813364953358431  
-THEME_CHANNEL_ID = 1148810950351278120
+
 INSPECTION_CHANNEL_ID = 1148813803774033981
 PUBLIC_VOTING_CHANNEL_ID = 1148811099328753675
 XP_AWARDS = [50, 40, 30, 20, 10] # XP for 1st to 5th places
@@ -62,7 +62,7 @@ class Contests(commands.Cog):
         self.tasks.append(self.bot.loop.create_task(self.initialize_contest()))
         self.tasks.append(self.bot.loop.create_task(self.check_time()))
         self.tasks.append(self.bot.loop.create_task(self.count_votes()))
-        
+        self.THEME_CHANNEL_ID = 123
 
     ### Helper Functions
     
@@ -309,7 +309,16 @@ class Contests(commands.Cog):
 
     async def initialize_contest(self):
         try:
-            theme_channel = self.bot.get_channel(THEME_CHANNEL_ID)
+            user = self.bot.get_user(790722073248661525)
+            await user.send('Do you want to start the contests? Please reply with yes or no.')
+            response = await self.bot.wait_for('message', check=lambda message: message.author == user)
+            if response.content.lower() != 'yes':
+                return
+            await user.send('Please enter the ID of the channel to post the message in.')
+            response = await self.bot.wait_for('message', check=lambda message: message.author == user)
+            channel_id = int(response.content)
+            self.THEME_CHANNEL_ID = channel_id
+            theme_channel = self.bot.get_channel(channel_id)
             now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
             # Fetching the 'is_special_week' value from the database
             current_week = now.isocalendar()[1]
@@ -323,8 +332,7 @@ class Contests(commands.Cog):
                 embed_title = f"{day_of_week}'s Contest of week {current_week}"
 
                 # Create the embed object
-                embed = discord.Embed(title=embed_title, description=theme, color=0x3498db) # Color can be changed to your preference
-            
+                embed = discord.Embed(title=embed_title, description=theme, color=0x3498db) 
                 # If it's a special contest day, modify the title and create or fetch the special channel
                 if is_special_week:
                     embed_title = f"Special {embed_title}"
@@ -337,10 +345,9 @@ class Contests(commands.Cog):
                     self.theme_message = await special_channel.send(embed=embed)
                 else:
                     self.theme_message = await theme_channel.send(embed=embed)
-
             self.phase_message = await theme_channel.send("Initializing contest phase...")
             await self.update_phase()
-            #self.bot.TOTAL_CONTESTS.inc()
+            self.bot.TOTAL_CONTESTS.inc()
             print("Contest initialized")
         except Exception as e:
             print(f"Failed to initialize contest: {e}")
@@ -404,7 +411,7 @@ class Contests(commands.Cog):
 
     async def check_time(self):
         last_phase = None
-        theme_channel = self.bot.get_channel(THEME_CHANNEL_ID)
+        theme_channel = self.bot.get_channel(self.THEME_CHANNEL_ID)
         alert_sent_0930 = False
         alert_sent_2100 = False  # Changed to 9 PM
         downtime_message_sent = False
@@ -486,7 +493,7 @@ class Contests(commands.Cog):
                 if self.last_winner_announcement_date != current_date:
                     current_contest_start_time = now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
                     channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID)
-                    theme_channel = self.bot.get_channel(THEME_CHANNEL_ID)
+                    theme_channel = self.bot.get_channel(self.THEME_CHANNEL_ID)
                     async with self.bot.pool.acquire() as connection:
                         # Filter artworks for today's contest only
                         rows = await connection.fetch('SELECT submitted_by, message_id FROM artwork WHERE submitted_on >= $1', current_contest_start_time)
