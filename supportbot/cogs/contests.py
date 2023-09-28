@@ -44,7 +44,7 @@ def generate_progress_bar(percentage):
         progress_bar = "╍" * total_slots
     return f"{progress_bar} {percentage}%"
 
-.set_offse4t
+
 
 class Contests(commands.Cog):
     def __init__(self, bot):
