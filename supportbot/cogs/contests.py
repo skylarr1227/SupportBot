@@ -121,6 +121,8 @@ class Contests(commands.Cog):
     async def current_bot_time(self):
         """Get the current bot time considering offset and acceleration."""
         now = datetime.now(timezone('US/Eastern'))
+        if self.STARTED is None:
+            self.STARTED = now
         if self.time_acceleration_factor:
             elapsed_time = now - self.STARTED
             accelerated_time = elapsed_time.total_seconds() * self.time_acceleration_factor
