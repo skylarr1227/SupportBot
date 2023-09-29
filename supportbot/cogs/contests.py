@@ -55,7 +55,7 @@ class Contests(commands.Cog):
         self.phase_message = None
         self.tasks = [] 
         self.custom_day = None 
-        self.current_day = None
+        self.current_day = datetime.now(timezone('US/Eastern')).weekday()
         self.time_acceleration_factor = 1
         self.next_phase = None
         self.last_winner_announcement_date = None
@@ -124,16 +124,23 @@ class Contests(commands.Cog):
         now = datetime.now(timezone('US/Eastern'))
         if self.STARTED is None:
             self.STARTED = now
-        if self.time_acceleration_factor:
+        
+        if self.time_acceleration_factor != 1:
             elapsed_time = now - self.STARTED
             accelerated_time = elapsed_time.total_seconds() * self.time_acceleration_factor
             new_time = self.STARTED + timedelta(seconds=accelerated_time)
-            if new_time.day != self.STARTED.day:
-                self.current_day = (self.current_day + 1) % 7  
+            new_day = new_time.weekday()
+
+            if new_day != self.current_day:
+                self.current_day = new_day  # Update current_day if it has changed due to time acceleration
+
             return new_time.replace(hour=new_time.hour % 24) 
         elif self.custom_day is not None:
-            return now.replace(weekday=self.custom_day)  # Use custom_day if it's set
+            return now.replace(weekday=self.custom_day)
         else:
+            new_day = now.weekday()
+            if new_day != self.current_day:
+                self.current_day = new_day  # Update current_day if it has changed naturally
             return now
 
 
