@@ -130,10 +130,11 @@ class Contests(commands.Cog):
             if new_time.day != self.STARTED.day:
                 self.current_day = (self.current_day + 1) % 7  
             return new_time.replace(hour=new_time.hour % 24) 
-        elif self.current_day is not None:
-            return now.replace(weekday=self.current_day)
+        elif self.custom_day is not None:
+            return now.replace(weekday=self.custom_day)  # Use custom_day if it's set
         else:
             return now
+    
 
     async def inspect_image(self, user_id, image_url):
         channel = self.bot.get_channel(INSPECTION_CHANNEL_ID)
