@@ -53,7 +53,8 @@ class Contests(commands.Cog):
         self.time_offset = 0
         self.accepting_images = True
         self.phase_message = None
-        self.tasks = []  
+        self.tasks = [] 
+        self.custom_day = None 
         self.next_phase = None
         self.last_winner_announcement_date = None
         self.theme_message = None
@@ -211,6 +212,14 @@ class Contests(commands.Cog):
         self.debug = debug
         status = "enabled" if debug else "disabled"
         await ctx.send(f"Debug mode has been {status}.")
+    
+    @team()
+    @commands.command()
+    async def set_day(self, ctx, day: int):
+        """DEBUG: Set day for testing purposes"""
+        self.custom_day = day
+        await ctx.send(f"Custom day set to {day}.")
+        await self.update_phase()
 
     @team()
     @commands.command(name='setoffset')
@@ -352,6 +361,8 @@ class Contests(commands.Cog):
         is a special week or a regular week to set the phase.
         """
         now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
+        if self.custom_day is not None:
+            now = now.replace(day=self.custom_day)
         current_phase = None
 
         # Fetch the 'is_special_week' value from the database
