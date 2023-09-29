@@ -55,6 +55,7 @@ class Contests(commands.Cog):
         self.phase_message = None
         self.tasks = [] 
         self.custom_day = None 
+        self.time_acceleration_factor = 1
         self.next_phase = None
         self.last_winner_announcement_date = None
         self.theme_message = None
@@ -222,6 +223,18 @@ class Contests(commands.Cog):
         await self.update_phase()
 
     @team()
+    @commands.command()
+    async def time_warp(self, ctx):
+        """DEBUUG: Toggle time acceleration for testing."""
+        if self.time_acceleration_factor == 1:
+            self.time_acceleration_factor = 60  # 1 min will be considered as 1 hour
+            await ctx.send("Time acceleration enabled. 1 minute will be considered as 1 hour.")
+        else:
+            self.time_acceleration_factor = 1  # Reset to real-time
+            await ctx.send("Time acceleration disabled. Time will flow normally.")
+        await self.update_phase()
+
+    @team()
     @commands.command(name='setoffset')
     async def set_offset(self, ctx, offset: int):
         self.time_offset = offset
@@ -361,10 +374,13 @@ class Contests(commands.Cog):
         is a special week or a regular week to set the phase.
         """
         now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
+        if self.debug:
+            now += timedelta(minutes=(datetime.now().minute * (self.time_acceleration_factor - 1)))
+        # Apply time offset
+        now += timedelta(hours=self.time_offset)
         if self.custom_day is not None:
             now = now.replace(day=self.custom_day)
         current_phase = None
-
         # Fetch the 'is_special_week' value from the database
         async with self.bot.pool.acquire() as connection:
             current_week = now.isocalendar()[1]
