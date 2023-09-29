@@ -68,6 +68,66 @@ class Contests(commands.Cog):
         self.prev_day_theme_message = None
     ### Helper Functions
     
+
+    async def get_current_phase(self):
+        """
+        Get the current phase of the contest based on the bot's internal time and settings.
+        """
+        now = await self.current_bot_time()
+        current_phase = "Unknown"
+
+        # Fetch the 'is_special_week' value from the database
+        async with self.bot.pool.acquire() as connection:
+            current_week = now.isocalendar()[1]
+            row = await connection.fetchrow('SELECT special FROM contests WHERE week = $1', current_week)
+            is_special_week = row['special'] if row else False
+        if is_special_week:
+            if 0 <= now.weekday() < 5:  # Monday to Friday
+                current_phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"  # In Progress
+                self.accepting_images = True
+                self.STARTED = now
+            elif now.weekday() == 5:  # Saturday
+                current_phase = "<:vote:1146208634322296923>"  # Voting
+                self.accepting_images = False
+            elif now.weekday() == 6:  # Sunday
+                current_phase = "<:down3:1146208635953873016><:down2:1146208638843748372>"  # Downtime
+                self.accepting_images = False
+        ### Regular Week Schedule 
+        else:
+            if now.weekday() == 0:  # Monday
+                current_phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"  # In Progress
+                self.accepting_images = True
+                self.STARTED = now
+            elif now.weekday() == 1:  # Tuesday
+                if 0 <= now.hour < 12:  # 12:00am - 11:59am
+                    current_phase = "<:vote:1146208634322296923>"  # Voting
+                    self.accepting_images = False
+                else:
+                    current_phase = "<:down3:1146208635953873016><:down2:1146208638843748372>"  # Downtime
+                    self.accepting_images = False
+            elif now.weekday() == 2:  # Wednesday
+                current_phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"  # In Progress
+                self.accepting_images = True
+                self.STARTED = now
+            elif now.weekday() == 3:  # Thursday
+                if 0 <= now.hour < 12:  # 12:00am - 11:59am
+                    current_phase = "<:vote:1146208634322296923>"  # Voting
+                    self.accepting_images = False
+                else:
+                    current_phase = "<:down3:1146208635953873016><:down2:1146208638843748372>"  # Downtime
+                    self.accepting_images = False
+            return current_phase
+
+    async def current_bot_time(self):
+        """Get the current bot time considering offset and acceleration."""
+        now = datetime.now(timezone('US/Eastern'))
+        if self.debug:
+            now += timedelta(minutes=(datetime.now().minute * (self.time_acceleration_factor - 1)))
+        now += timedelta(hours=self.time_offset)
+        if self.custom_day is not None:
+            now = now.replace(day=self.custom_day)
+        return now
+
     async def inspect_image(self, user_id, image_url):
         channel = self.bot.get_channel(INSPECTION_CHANNEL_ID)
         message = await channel.send(embed=discord.Embed(description=f"{user_id}").set_image(url=image_url))
@@ -225,7 +285,7 @@ class Contests(commands.Cog):
     @team()
     @commands.command()
     async def time_warp(self, ctx):
-        """DEBUUG: Toggle time acceleration for testing."""
+        """DEBUG: Toggle time acceleration for testing."""
         if self.time_acceleration_factor == 1:
             self.time_acceleration_factor = 60  # 1 min will be considered as 1 hour
             await ctx.send("Time acceleration enabled. 1 minute will be considered as 1 hour.")
@@ -234,9 +294,19 @@ class Contests(commands.Cog):
             await ctx.send("Time acceleration disabled. Time will flow normally.")
         await self.update_phase()
 
+    @commands.command()
+    async def time(self, ctx):
+        """Check the current bot time, day, week, and phase."""
+        now = await self.current_bot_time()
+        current_week = now.isocalendar()[1]
+        current_phase = await self.get_current_phase()
+        await ctx.send(f"\nCurrent Phase: {current_phase}\n# Current Bot Time: {now.strftime('%Y-%m-%d %H:%M:%S')}\n## Current Week: {current_week}\n### Current Day: {now.day}")
+
+
     @team()
     @commands.command(name='setoffset')
     async def set_offset(self, ctx, offset: int):
+        """DEBUG: Set time offset 1-24"""
         self.time_offset = offset
         await self.update_phase()  
         await ctx.send(f"Time offset has been set to {offset} hours, and the phase has been updated.")
@@ -367,66 +437,17 @@ class Contests(commands.Cog):
     
     async def update_phase(self):
         """
-        Updates the contest phase and sets the appropriate message and status flags.
-
-        This function checks the current time and day of the week to determine
-        what phase the contest is in. It also considers whether the current week
-        is a special week or a regular week to set the phase.
+        Update the current phase of the contest.
         """
-        now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
-        if self.debug:
-            now += timedelta(minutes=(datetime.now().minute * (self.time_acceleration_factor - 1)))
-        # Apply time offset
-        now += timedelta(hours=self.time_offset)
-        if self.custom_day is not None:
-            now = now.replace(day=self.custom_day)
-        current_phase = None
-        # Fetch the 'is_special_week' value from the database
-        async with self.bot.pool.acquire() as connection:
-            current_week = now.isocalendar()[1]
-            row = await connection.fetchrow('SELECT special FROM contests WHERE week = $1', current_week)
-            is_special_week = row['special'] if row else False
-
-        # If it's a special contest week
-        if is_special_week:
-            if 0 <= now.weekday() < 5:  # Monday to Friday
-                current_phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"  # In Progress
-                self.accepting_images = True
-                self.STARTED = now
-            elif now.weekday() == 5:  # Saturday
-                current_phase = "<:vote:1146208634322296923>"  # Voting
-                self.accepting_images = False
-            elif now.weekday() == 6:  # Sunday
-                current_phase = "<:down3:1146208635953873016><:down2:1146208638843748372>"  # Downtime
-                self.accepting_images = False
-        ### Regular Week Schedule 
-        else:
-            if now.weekday() == 0:  # Monday
-                current_phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"  # In Progress
-                self.accepting_images = True
-                self.STARTED = now
-            elif now.weekday() == 1:  # Tuesday
-                if 0 <= now.hour < 12:  # 12:00am - 11:59am
-                    current_phase = "<:vote:1146208634322296923>"  # Voting
-                    self.accepting_images = False
-                else:
-                    current_phase = "<:down3:1146208635953873016><:down2:1146208638843748372>"  # Downtime
-                    self.accepting_images = False
-            elif now.weekday() == 2:  # Wednesday
-                current_phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"  # In Progress
-                self.accepting_images = True
-                self.STARTED = now
-            elif now.weekday() == 3:  # Thursday
-                if 0 <= now.hour < 12:  # 12:00am - 11:59am
-                    current_phase = "<:vote:1146208634322296923>"  # Voting
-                    self.accepting_images = False
-                else:
-                    current_phase = "<:down3:1146208635953873016><:down2:1146208638843748372>"  # Downtime
-                    self.accepting_images = False
-
-        # Update the current phase message
-        if self.phase_message:
-            await self.phase_message.edit(content=f"{current_phase}")
+        # Get the current phase using the get_current_phase method
+        current_phase = await self.get_current_phase()
+        try:
+            if self.phase_message:
+                await self.phase_message.edit(content=f"{current_phase}")
+        except discord.errors.NotFound:
+            print("Error: Message not found. It may have been deleted.")
+            
+            
 
 
 
