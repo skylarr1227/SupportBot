@@ -55,6 +55,7 @@ class Contests(commands.Cog):
         self.phase_message = None
         self.tasks = [] 
         self.custom_day = None 
+        self.current_day = None
         self.time_acceleration_factor = 1
         self.next_phase = None
         self.last_winner_announcement_date = None
@@ -134,7 +135,7 @@ class Contests(commands.Cog):
             return now.replace(weekday=self.custom_day)  # Use custom_day if it's set
         else:
             return now
-    
+
 
     async def inspect_image(self, user_id, image_url):
         channel = self.bot.get_channel(INSPECTION_CHANNEL_ID)
