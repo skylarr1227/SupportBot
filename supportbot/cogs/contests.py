@@ -121,12 +121,17 @@ class Contests(commands.Cog):
     async def current_bot_time(self):
         """Get the current bot time considering offset and acceleration."""
         now = datetime.now(timezone('US/Eastern'))
-        if self.debug:
-            now += timedelta(minutes=(datetime.now().minute * (self.time_acceleration_factor - 1)))
-        now += timedelta(hours=self.time_offset)
-        if self.custom_day is not None:
-            now = now.replace(day=self.custom_day)
-        return now
+        if self.time_acceleration_factor:
+            elapsed_time = now - self.STARTED
+            accelerated_time = elapsed_time.total_seconds() * self.time_acceleration_factor
+            new_time = self.STARTED + timedelta(seconds=accelerated_time)
+            if new_time.day != self.STARTED.day:
+                self.current_day = (self.current_day + 1) % 7  
+            return new_time.replace(hour=new_time.hour % 24) 
+        elif self.current_day is not None:
+            return now.replace(weekday=self.current_day)
+        else:
+            return now
 
     async def inspect_image(self, user_id, image_url):
         channel = self.bot.get_channel(INSPECTION_CHANNEL_ID)
