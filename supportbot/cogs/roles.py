@@ -1,5 +1,31 @@
 from discord.ext import commands
-from discord import Embed, SelectMenu, SelectOption, Interaction
+from discord import Embed, ui, ButtonStyle
+
+class RoleSelect(ui.Select):
+    def __init__(self):
+        options = [
+            {"label": "Role 1", "value": "role_1_id"},
+            {"label": "Role 2", "value": "role_2_id"}
+        ]
+        super().__init__(placeholder="Choose a role", options=options, custom_id="role_select_menu")
+
+    async def callback(self, interaction: ui.Interaction):
+        role_value = self.values[0]
+        if role_value == "role_1_id":
+            role = interaction.guild.get_role(774125342809391154)  # Replace ROLE_1_ID with the actual ID
+        elif role_value == "role_2_id":
+            role = interaction.guild.get_role(1134273992883187762)  # Replace ROLE_2_ID with the actual ID
+        else:
+            await interaction.response.send_message("Invalid role selected.", ephemeral=True)
+            return
+
+        await interaction.user.add_roles(role)
+        await interaction.response.send_message(f"You have been given the {role.name} role!", ephemeral=True)
+
+class RoleView(ui.View):
+    def __init__(self):
+        super().__init__()
+        self.add_item(RoleSelect())
 
 class RoleCog(commands.Cog):
     def __init__(self, bot):
@@ -8,37 +34,9 @@ class RoleCog(commands.Cog):
     @commands.command()
     async def choose_role(self, ctx):
         """Allows a user to choose between two roles."""
-        
-        # Create a select menu with the two roles
-        select_menu = SelectMenu(custom_id='role_select_menu', placeholder='Role Choice Testing',
-                                 options=[
-                                     SelectOption(label='VIP TESTER', value='1134273992883187762'),
-                                     SelectOption(label='ART SHARING', value='1006994577279942656')
-                                 ])
-        
-        # Create an embed and add the select menu
-        embed = Embed(title='Choose your role', description='Select a role from the dropdown menu below.')
-        await ctx.send(embed=embed, components=[select_menu])
+        embed = Embed(title="Choose your role", description="Select a role from the dropdown menu below.")
+        view = RoleView()
+        await ctx.send(embed=embed, view=view)
 
-    @commands.Cog.listener()
-    async def on_select_option(self, interaction: Interaction):
-        """Handles the select option interaction."""
-        if interaction.custom_id == 'role_select_menu':
-            selected_role_value = interaction.data['values'][0]
-            
-            # Find the role based on the selected value
-            if selected_role_value == '1134273992883187762':
-                role = interaction.guild.get_role(1134273992883187762)  # Replace ROLE_1_ID with the actual ID
-            elif selected_role_value == '1006994577279942656':
-                role = interaction.guild.get_role(1006994577279942656)  # Replace ROLE_2_ID with the actual ID
-            else:
-                await interaction.response.send_message("Invalid role selected.", ephemeral=True)
-                return
-            
-            # Add the role to the user
-            await interaction.user.add_roles(role)
-            await interaction.response.send_message(f"You have been given the {role.name} role!", ephemeral=True)
-
-# Replace "bot" with the name of your bot instance
 async def setup(bot):
     await bot.add_cog(RoleCog(bot))
