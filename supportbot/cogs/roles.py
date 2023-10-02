@@ -4,12 +4,12 @@ from discord import Embed, ui, ButtonStyle, Interaction
 class RoleSelect(ui.Select):
     def __init__(self):
         options = [
-            {"label": "Role 1", "value": "role_1_id"},
-            {"label": "Role 2", "value": "role_2_id"}
+            ui.SelectOption(label="Role 1", value="role_1_id"),
+            ui.SelectOption(label="Role 2", value="role_2_id")
         ]
         super().__init__(placeholder="Choose a role", options=options, custom_id="role_select_menu")
 
-    async def callback(self, interaction: Interaction):
+    async def callback(self, interaction):
         role_value = self.values[0]
         if role_value == "role_1_id":
             role = interaction.guild.get_role(774125342809391154)  # Replace ROLE_1_ID with the actual ID
