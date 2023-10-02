@@ -299,6 +299,34 @@ class Contests(commands.Cog):
         await self.update_phase()
 
     @team()
+    @commands.command(name='manual_phase')
+    async def manual_phase(self, ctx, phase: str):
+        """
+        Manually set the current phase of the contest.
+        This command is only for team members.
+        Valid phases: "progress", "voting", "downtime"
+        """
+        phase = phase.lower()
+        valid_phases = ["progress", "voting", "downtime"]
+        if phase not in valid_phases:
+            await ctx.send("Invalid phase. Valid phases are 'progress', 'voting', 'downtime'.")
+            return
+
+        if phase == "progress":
+            self.accepting_images = True
+            current_phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"  # In Progress
+        elif phase == "voting":
+            self.accepting_images = False
+            current_phase = "<:vote:1146208634322296923>"  # Voting
+        else:  # phase == "downtime"
+            self.accepting_images = False
+            current_phase = "<:down3:1146208635953873016><:down2:1146208638843748372>"  # Downtime
+
+        # Update the phase message and alert the user that the phase has been updated manually
+        await self.update_phase()
+        await ctx.send(f"Phase set to {current_phase}.")
+
+    @team()
     @commands.command()
     async def time_warp(self, ctx):
         """DEBUG: Toggle time acceleration for testing."""
@@ -350,6 +378,9 @@ class Contests(commands.Cog):
     async def shop_web(self, ctx):
         await ctx.send(embed=discord.Embed(title="Coming soon", description="Coupon codes for free subscriptions!"))
         pass
+
+
+
 
 
     @commands.command(name='cinfo')
