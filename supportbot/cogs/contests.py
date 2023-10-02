@@ -385,7 +385,7 @@ class Contests(commands.Cog):
 
     @commands.command(name='cinfo')
     async def contest_stats(self, ctx):
-        now = datetime.now(timezone('US/Eastern'))
+        now = await self.current_bot_time()
         # Create datetime objects for the end of each phase today
         end_in_progress = now.replace(hour=17, minute=59, second=59, microsecond=999999)
         end_voting = now.replace(hour=18, minute=59, second=59, microsecond=999999)
@@ -460,7 +460,7 @@ class Contests(commands.Cog):
             self.THEME_CHANNEL_ID = channel_id
             theme_channel = self.bot.get_channel(channel_id)    
 
-            now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
+            now = await self.current_bot_time()
             current_week = now.isocalendar()[1]
             day_of_week = calendar.day_name[now.weekday()].lower()
             async with self.bot.pool.acquire() as connection:
@@ -591,7 +591,7 @@ class Contests(commands.Cog):
 
     async def count_votes(self):
         while True:
-            now = datetime.now(timezone('US/Eastern'))
+            now = await self.current_bot_time()
             current_date = now.date()
             current_timestamp = int(now.timestamp())
             if now.hour == 22:
