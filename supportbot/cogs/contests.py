@@ -462,16 +462,31 @@ class Contests(commands.Cog):
 
             now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
             current_week = now.isocalendar()[1]
+            day_of_week = calendar.day_name[now.weekday()].lower()
             async with self.bot.pool.acquire() as connection:
                 row = await connection.fetchrow('SELECT special FROM contests WHERE week = $1', current_week)
                 is_special_week = row['special'] if row else False  
 
             # Check if the phase message exists
             if self.phase_message is None:
-                prev_day = now - timedelta(days=1)
-                prev_theme = await self.get_theme(target_date=prev_day)
-                prev_embed = discord.Embed(title="Previous Day's Theme", description=prev_theme, color=0xFF0000)
-                self.phase_message = await theme_channel.send(embed=prev_embed) 
+            # Define the days when to show today's theme and when to show the previous day's theme
+                show_todays_theme_days = ['Monday', 'Wednesday']
+                show_previous_days_theme = ['Tuesday', 'Thursday']
+                
+                if day_of_week.capitalize() in show_todays_theme_days:
+                    target_day = now
+                    embed_title = "Today's Theme"
+                elif day_of_week.capitalize() in show_previous_days_theme:
+                    target_day = now - timedelta(days=1)
+                    embed_title = "Previous Day's Theme"
+                else:
+                    target_day = None  # For other days, you can decide what to do
+                
+                if target_day is not None:
+                    theme = await self.get_theme(target_date=target_day)
+                    theme_embed = discord.Embed(title=embed_title, description=theme, color=0xFF0000)
+                    self.phase_message = await theme_channel.send(embed=theme_embed)
+        
 
             await self.update_phase()
             self.bot.TOTAL_CONTESTS.inc()
