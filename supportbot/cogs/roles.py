@@ -1,5 +1,5 @@
 from discord.ext import commands
-from discord import Embed, ui, ButtonStyle
+from discord import Embed, ui, ButtonStyle, Interaction
 
 class RoleSelect(ui.Select):
     def __init__(self):
@@ -9,7 +9,7 @@ class RoleSelect(ui.Select):
         ]
         super().__init__(placeholder="Choose a role", options=options, custom_id="role_select_menu")
 
-    async def callback(self, interaction: ui.Interaction):
+    async def callback(self, interaction: Interaction):
         role_value = self.values[0]
         if role_value == "role_1_id":
             role = interaction.guild.get_role(774125342809391154)  # Replace ROLE_1_ID with the actual ID
