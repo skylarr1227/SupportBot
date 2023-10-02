@@ -23,7 +23,7 @@ class CurationCog(commands.Cog):
                 async with self.bot.pool.acquire() as connection:
                     await connection.execute(
                         'INSERT INTO curation (TASK_ID, AUTHOR, DATE) VALUES ($1, $2, $3)',
-                        task_id, author, date
+                        str(task_id), str(author), date
                     )
 
 # Replace the setup function if you already have one
