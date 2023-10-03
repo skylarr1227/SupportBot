@@ -275,10 +275,10 @@ class UserMetricsCog(commands.Cog):
 
     @team()
     @commands.command()
-    async def inv_info(ctx, invite_code):
+    async def inv_info(self, ctx, invite_code):
         try:
             # Fetch the invite object
-            invite = await bot.fetch_invite(f'https://discord.gg/{invite_code}')
+            invite = await self.bot.fetch_invite(f'https://discord.gg/{invite_code}')
 
             # Extract and display relevant information
             server_name = invite.guild.name
