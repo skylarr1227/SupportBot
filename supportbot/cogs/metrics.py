@@ -301,6 +301,43 @@ class UserMetricsCog(commands.Cog):
             await ctx.send("An error occurred while fetching invite information.")
 
 
+    @team()
+    @commands.command()
+    @commands.has_permissions(manage_guild=True)
+    async def list_invites(self, ctx):
+        """
+        List all the invite codes for the server.
+
+        This command is only usable by members with the "Manage Server" permission.
+        The bot itself also needs the "Manage Server" permission to fetch invite links.
+        """
+        try:
+            # Fetch all invites for the guild
+            invites = await ctx.guild.invites()
+        except discord.Forbidden:
+            # The bot doesn't have the required permissions
+            await ctx.send("I don't have the 'Manage Server' permission to fetch invites.")
+            return
+        except Exception as e:
+            # Any other exception
+            await ctx.send(f"An error occurred: {e}")
+            return
+
+        # Create a list of invite codes
+        invite_list = [invite.code for invite in invites]
+
+        # Create the message to send back
+        if invite_list:
+            message_base = "Here are the invite codes for this server:\n"
+            chunk_size = 30  # Number of invite codes per message
+
+            for i in range(0, len(invite_list), chunk_size):
+                chunk = invite_list[i:i + chunk_size]
+                message = message_base + "\n".join(chunk)
+                await ctx.send(message)
+        else:
+            await ctx.send("There are no invites for this server.")
+
 
     @commands.command(name='get_summary_metrics')
     async def get_summary_metrics(self, ctx):
