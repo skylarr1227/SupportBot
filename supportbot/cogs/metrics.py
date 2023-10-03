@@ -131,9 +131,10 @@ class UserMetricsCog(commands.Cog):
                 return
             if message.channel.id == 1156637978815377468:
                 self.bot.replies_per_user_counter.labels(user=str(message.author.name)).inc()
-            if str(message.author.id) in self.bot.word_counters:
-                words = message.content.split()
-                self.bot.word_counters[str(message.author.id)].update(words)
+           
+            #if str(message.author.id) in self.bot.word_counters:
+            #    words = message.content.split()
+            #    self.bot.word_counters[str(message.author.id)].update(words)
             self.bot.messages_per_channel_counter.labels(channel=message.channel.name).inc()
             self.bot.unique_users_per_channel_counter.labels(channel=message.channel.name).inc()
             # User Engagement Metrics
