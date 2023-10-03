@@ -272,6 +272,36 @@ class UserMetricsCog(commands.Cog):
 
         await ctx.send(f"🏆 Top Testers 🏆\n{leaderboard_text}")
 
+
+    @team()
+    @commands.command()
+    async def inv_info(ctx, invite_code):
+        try:
+            # Fetch the invite object
+            invite = await bot.fetch_invite(f'https://discord.gg/{invite_code}')
+
+            # Extract and display relevant information
+            server_name = invite.guild.name
+            server_id = invite.guild.id
+            inviter_name = invite.inviter.name
+            inviter_id = invite.inviter.id
+            uses = invite.uses
+            max_uses = invite.max_uses
+            expires_at = invite.expires_at if invite.expires_at else "Never"
+
+            await ctx.send(f"Invite Link: {invite.url}\n"
+                           f"Server Name: {server_name}\n"
+                           f"Server ID: {server_id}\n"
+                           f"Inviter: {inviter_name} (ID: {inviter_id})\n"
+                           f"Uses: {uses}/{max_uses}\n"
+                           f"Expires At: {expires_at}")
+        except discord.NotFound:
+            await ctx.send("Invite link not found or expired.")
+        except discord.HTTPException:
+            await ctx.send("An error occurred while fetching invite information.")
+
+
+
     @commands.command(name='get_summary_metrics')
     async def get_summary_metrics(self, ctx):
         try:
