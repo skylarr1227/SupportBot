@@ -73,7 +73,7 @@ class CurationCog(commands.Cog):
                 author = row['author']
                 date = row['date'].strftime('%Y-%m-%d')  
                 link = f"[{task_id}](https://dream.ai/listing/{task_id})"
-                description += f"Task ID: {link} - Author: {author} - {date}\n"
+                description += f"{link} - **{author}** - `{date}`\n"
 
             embed = discord.Embed(title="Tasks List from Curation", description=description, color=discord.Color.blue())
             pages.append(embed)
