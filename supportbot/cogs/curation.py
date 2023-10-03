@@ -63,7 +63,7 @@ class CurationCog(commands.Cog):
     async def curation(self, ctx, page: int = 1):
         """Fetches a list of tasks from the 'curation' table and displays them in a paginated format."""
         async with self.bot.pool.acquire() as connection:
-            rows = await connection.fetch('SELECT TASK_ID, AUTHOR, DATE FROM curation ORDER BY DATE ASC')
+            rows = await connection.fetch('SELECT task_id, author, date FROM curation ORDER BY date ASC')
 
         pages = []
         for i in range(0, len(rows), 20):
