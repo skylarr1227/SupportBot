@@ -69,9 +69,9 @@ class CurationCog(commands.Cog):
         for i in range(0, len(rows), 20):
             description = ""
             for row in rows[i:i+30]:
-                task_id = row['TASK_ID']
-                author = row['AUTHOR']
-                date = row['DATE'].strftime('%Y-%m-%d %H:%M:%S')  
+                task_id = row['task_id']
+                author = row['author']
+                date = row['date'].strftime('%Y-%m-%d %H:%M:%S')  
                 link = f"[{task_id}](https://dream.ai/listing/{task_id})"
                 description += f"Task ID: {link} - Author: {author} - Date: {date}\n"
 
