@@ -31,6 +31,43 @@ class UserMetricsCog(commands.Cog):
         self.tasks = []
         #self.loop.create_task(self.update_top_words())
         self.tasks.append(self.bot.loop.create_task(self.update_top_words()))
+        self.tasks.append(self.bot.loop.create_task(self.log_member_status()))
+
+
+    async def log_member_status(self):
+        await self.bot.wait_until_ready()
+        while not self.bot.is_closed():
+            guild_id = 774124295026376755  # Replace with your guild ID
+            guild = self.bot.get_guild(guild_id)
+            if guild is None:
+                return
+
+            online, offline, idle, busy = await self.count_member_status(guild)
+            await self.insert_status_to_db(online, offline, idle, busy)
+
+            await asyncio.sleep(300)
+
+
+    async def count_member_status(self, guild):
+        online = offline = idle = busy = 0
+        for member in guild.members:
+            if member.status == discord.Status.online:
+                online += 1
+            elif member.status == discord.Status.offline:
+                offline += 1
+            elif member.status == discord.Status.idle:
+                idle += 1
+            elif member.status == discord.Status.dnd:  # Do not disturb is considered "Busy"
+                busy += 1
+        return online, offline, idle, busy
+
+    async def insert_status_to_db(self, online, offline, idle, busy):
+        query = '''INSERT INTO log (Online, Offline, Busy, Idle) VALUES ($1, $2, $3, $4);'''
+        pool = self.bot.pool  
+        async with pool.acquire() as conn:
+            await conn.execute(query, online, offline, busy, idle)
+
+   
 
     async def update_metrics(self, user_id, metrics):
         loop = asyncio.get_event_loop()
