@@ -37,13 +37,19 @@ class UserMetricsCog(commands.Cog):
     async def log_member_status(self):
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
-            guild_id = 774124295026376755  
-            guild = self.bot.get_guild(guild_id)
-            if guild is None:
-                return
+            try:
+                guild_id = 774124295026376755
+                guild = self.bot.get_guild(guild_id)
+                if guild is None:
+                    logging.warning("Guild not found.")
+                    return
 
-            online, offline, idle, busy = await self.count_member_status(guild)
-            await self.insert_status_to_db(online, offline, idle, busy)
+                online, offline, idle, busy = await self.count_member_status(guild)
+                await self.insert_status_to_db(online, offline, idle, busy)
+                logging.info(f"Logged status: Online={online}, Offline={offline}, Idle={idle}, Busy={busy}")
+
+            except Exception as e:
+                logging.error(f"An error occurred in log_member_status: {e}")
 
             await asyncio.sleep(300)
 
