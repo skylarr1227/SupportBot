@@ -51,7 +51,7 @@ class UserMetricsCog(commands.Cog):
             except Exception as e:
                 logging.error(f"An error occurred in log_member_status: {e}")
 
-            await asyncio.sleep(300)
+            await asyncio.sleep(150)
 
 
     async def count_member_status(self, guild):
