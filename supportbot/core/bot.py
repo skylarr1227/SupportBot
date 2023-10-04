@@ -28,6 +28,7 @@ intents.reactions = True
 intents.guilds = True
 intents.members = True
 intents.message_content = True
+intents.presences = True
 
 async def get_prefix(bot, message):
     if not message.guild:
