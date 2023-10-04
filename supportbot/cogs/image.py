@@ -53,7 +53,7 @@ class ImageCollage(commands.Cog):
         with io.BytesIO() as image_binary:
             collage_img.save(image_binary, 'PNG')
             image_binary.seek(0)
-            await interaction.response.followup.send(file=discord.File(fp=image_binary, filename="collage.png"))
+            await interaction.followup.send(file=discord.File(fp=image_binary, filename="collage.png"))
 
     def _create_collage(self, images):
         """

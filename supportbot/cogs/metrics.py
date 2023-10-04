@@ -30,7 +30,7 @@ class UserMetricsCog(commands.Cog):
         self.word_freqs = defaultdict(Counter)
         self.tasks = []
         #self.loop.create_task(self.update_top_words())
-        self.tasks.append(self.bot.loop.create_task(self.update_top_words()))
+        #self.tasks.append(self.bot.loop.create_task(self.update_top_words()))
         self.tasks.append(self.bot.loop.create_task(self.log_member_status()))
 
 
