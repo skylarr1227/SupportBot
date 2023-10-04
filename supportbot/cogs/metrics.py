@@ -37,7 +37,7 @@ class UserMetricsCog(commands.Cog):
     async def log_member_status(self):
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
-            guild_id = 774124295026376755  # Replace with your guild ID
+            guild_id = 774124295026376755  
             guild = self.bot.get_guild(guild_id)
             if guild is None:
                 return
@@ -57,7 +57,7 @@ class UserMetricsCog(commands.Cog):
                 offline += 1
             elif member.status == discord.Status.idle:
                 idle += 1
-            elif member.status == discord.Status.dnd:  # Do not disturb is considered "Busy"
+            elif member.status == discord.Status.dnd: 
                 busy += 1
         return online, offline, idle, busy
 
