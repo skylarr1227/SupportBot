@@ -54,6 +54,26 @@ class UserMetricsCog(commands.Cog):
             await asyncio.sleep(150)
 
 
+    @commands.command()
+    async def count_specific_role(self, ctx, guild_id: int, role_id: int):
+        guild = self.bot.get_guild(guild_id)
+        if not guild:
+            await ctx.send(f"No guild found for the ID {guild_id}.")
+            return
+
+        role = guild.get_role(role_id)
+        if not role:
+            await ctx.send(f"No role found for the ID {role_id}.")
+            return
+
+        count = 0
+        for member in guild.members:
+            if len(member.roles) == 2 and role in member.roles:
+                count += 1
+
+        await ctx.send(f"In guild {guild.name}, {count} members have only the role {role.name}.")
+
+
     async def count_member_status(self, guild):
         online = offline = idle = busy = 0
         for member in guild.members:
