@@ -54,33 +54,28 @@ class UserMetricsCog(commands.Cog):
             await asyncio.sleep(150)
 
 
-    async def log_to_db(self, user_id: int):
-        pool = self.bot.pool  # Assuming you've stored the Postgres pool in your bot instance
-        async with pool.acquire() as conn:
-            await conn.execute('INSERT INTO dm (user_id) VALUES ($1)', user_id)
+    async def insert_ids_to_db(self, user_ids):
+        query = '''INSERT INTO dm (user_id) VALUES ($1);'''
+        pool = self.bot.pool  
+
+        batch_size = 100  
+        for i in range(0, len(user_ids), batch_size):
+            batch = user_ids[i:i+batch_size]
+            async with pool.acquire() as conn:
+                await conn.executemany(query, [(x,) for x in batch])
 
     @commands.command()
-    async def count_specific_role(self, ctx, guild_id: int, role_id: int):
+    async def log_all_members(self, ctx, guild_id: int):
 
         guild = self.bot.get_guild(guild_id)
         if not guild:
             await ctx.send(f"No guild found for the ID {guild_id}.")
             return
-
-
-        role = guild.get_role(role_id)
-        if not role:
-            await ctx.send(f"No role found for the ID {role_id}.")
-            return
-
-        count = 0
+        user_ids_to_insert = []
         for member in guild.members:
-            if len(member.roles) == 2 and role in member.roles:
-                count += 1
-                await self.log_to_db(member.id)  # Log each user ID to the database
+            user_ids_to_insert.append(member.id)
 
-        await ctx.send(f"In guild {guild.name}, {count} members have only the role {role.name}.")
-
+        await self.insert_ids_to_db(user_ids_to_insert)
 
     async def count_member_status(self, guild):
         online = offline = idle = busy = 0
