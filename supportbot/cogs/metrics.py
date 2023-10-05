@@ -64,31 +64,7 @@ class UserMetricsCog(commands.Cog):
             async with pool.acquire() as conn:
                 await conn.executemany(query, [(x,) for x in batch])
 
-    @commands.command()
-    async def log_all_members(self, ctx, guild_id: int):
-
-        guild = self.bot.get_guild(guild_id)
-        if not guild:
-            await ctx.send(f"No guild found for the ID {guild_id}.")
-            return
-        user_ids_to_insert = []
-        for member in guild.members:
-            user_ids_to_insert.append(member.id)
-
-        await self.insert_ids_to_db(user_ids_to_insert)
-
-    async def count_member_status(self, guild):
-        online = offline = idle = busy = 0
-        for member in guild.members:
-            if member.status == discord.Status.online:
-                online += 1
-            elif member.status == discord.Status.offline:
-                offline += 1
-            elif member.status == discord.Status.idle:
-                idle += 1
-            elif member.status == discord.Status.dnd: 
-                busy += 1
-        return online, offline, idle, busy
+    
 
     async def insert_status_to_db(self, online, offline, idle, busy):
         query = '''INSERT INTO log (Online, Offline, Busy, Idle) VALUES ($1, $2, $3, $4);'''
