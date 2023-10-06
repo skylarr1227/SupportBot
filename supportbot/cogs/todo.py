@@ -6,6 +6,7 @@ import json
 import aiohttp
 from enum import Enum
 from datetime import datetime, timedelta
+import pytz
 
 class Options(Enum):
     Critical = 1
@@ -40,7 +41,7 @@ class Todo(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def populate_long_term_members(self, ctx):
-        three_months_ago = datetime.utcnow() - timedelta(days=180)
+        three_months_ago = datetime.utcnow().replace(tzinfo=pytz.utc) - timedelta(days=180)
 
         long_term_member_ids = [
             member.id for member in ctx.guild.members
