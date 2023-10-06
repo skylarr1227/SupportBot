@@ -47,13 +47,13 @@ class Todo(commands.Cog):
             member.id for member in ctx.guild.members
             if member.joined_at is not None and member.joined_at < three_months_ago
         ]
-
+        async with self.bot.pool.acquire() as connection:
         # Inserting into the database
-        await self.bot.pg_con.executemany(
-            "INSERT INTO long_term_members (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
-            [(user_id,) for user_id in long_term_member_ids]
-        )
-        await ctx.send(f"{len(long_term_member_ids)} members have been added to the long_term_members table.")
+            await connection.executemany(
+                "INSERT INTO long_term_members (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
+                [(user_id,) for user_id in long_term_member_ids]
+            )
+            await ctx.send(f"{len(long_term_member_ids)} members have been added to the long_term_members table.")
     
 
     @vip()
