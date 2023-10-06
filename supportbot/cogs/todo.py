@@ -95,7 +95,7 @@ class Todo(commands.Cog):
             if member.joined_at is not None and member.joined_at < three_months_ago
         ]
 
-        await ctx.send(f"Found {len(long_term_member_ids)} members who joined more than {days} days ago. Beginning to add them to the database in batches...")
+        await ctx.send(f"Found {len(long_term_member_ids)} members who joined more than {days} days ago.")
         
 
     @vip()
