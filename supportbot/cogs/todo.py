@@ -68,7 +68,7 @@ class Todo(commands.Cog):
             if member.joined_at is not None and member.joined_at < three_months_ago
         ]
 
-        await ctx.send(f"Found {len(long_term_member_ids)} members who joined more than 6 months ago. Beginning to add them to the database in batches...")
+        await ctx.send(f"Found {len(long_term_member_ids)} members who joined more than 3 months ago. Beginning to add them to the database in batches...")
         
         async with self.bot.pool.acquire() as connection:
             for i in range(0, len(long_term_member_ids), BATCH_SIZE):
@@ -85,7 +85,18 @@ class Todo(commands.Cog):
             
         await ctx.send("Finished adding members to the database.")
 
+    @commands.command()
+    @commands.is_owner()
+    async def check(self, ctx, days: int):
+        three_months_ago = datetime.utcnow().replace(tzinfo=pytz.utc) - timedelta(days=days)
+        
+        long_term_member_ids = [
+            member.id for member in ctx.guild.members
+            if member.joined_at is not None and member.joined_at < three_months_ago
+        ]
 
+        await ctx.send(f"Found {len(long_term_member_ids)} members who joined more than {days} days ago. Beginning to add them to the database in batches...")
+        
 
     @vip()
     @app_commands.command()
