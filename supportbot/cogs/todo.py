@@ -5,7 +5,7 @@ import discord
 import json
 import aiohttp
 from enum import Enum
-
+from datetime import datetime, timedelta
 
 class Options(Enum):
     Critical = 1
@@ -36,6 +36,24 @@ class Todo(commands.Cog):
         else:
             await interaction.response.send_message("Failed to add task.", ephemeral=True)
 
+
+    @commands.command()
+    @commands.is_owner()
+    async def populate_long_term_members(self, ctx):
+        three_months_ago = datetime.utcnow() - timedelta(days=180)
+
+        long_term_member_ids = [
+            member.id for member in ctx.guild.members
+            if member.joined_at is not None and member.joined_at < three_months_ago
+        ]
+
+        # Inserting into the database
+        await self.bot.pg_con.executemany(
+            "INSERT INTO long_term_members (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
+            [(user_id,) for user_id in long_term_member_ids]
+        )
+        await ctx.send(f"{len(long_term_member_ids)} members have been added to the long_term_members table.")
+    
 
     @vip()
     @app_commands.command()

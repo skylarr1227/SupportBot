@@ -8,6 +8,7 @@ import asyncio
 import postgrest.exceptions
 import logging
 import re
+from datetime import datetime, timedelta
 
 categories = [980877639675949166,1030538756081590402,1077936033863323708,1026663023273844786]
 support_categories = [1109323625439445012,1109324122833567744,1043533890414968842,1088531848264683581]
@@ -275,6 +276,7 @@ class UserMetricsCog(commands.Cog):
             insert_query = lambda: self.bot.supabase.table('user_metrics').insert(payload).execute()
             await loop.run_in_executor(None, insert_query)
             return {'metrics': metrics}
+
 
     @team()
     @commands.command(name='mod-metrics')
