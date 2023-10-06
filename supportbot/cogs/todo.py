@@ -7,12 +7,15 @@ import aiohttp
 from enum import Enum
 from datetime import datetime, timedelta
 import pytz
+import asyncio 
 
 class Options(Enum):
     Critical = 1
     Normal = 2 
     Backlog = 3
 
+BATCH_SIZE = 1000  
+DELAY = 5
 TODOIST='f8ecdbb2d7c78936b63fc9a1882e74a4ffb19ed9'
 
 class Todo(commands.Cog):
@@ -55,6 +58,34 @@ class Todo(commands.Cog):
             )
             await ctx.send(f"{len(long_term_member_ids)} members have been added to the long_term_members table.")
     
+    @commands.command()
+    @commands.is_owner()
+    async def populate_90(self, ctx):
+        three_months_ago = datetime.utcnow().replace(tzinfo=pytz.utc) - timedelta(days=90)
+        
+        long_term_member_ids = [
+            member.id for member in ctx.guild.members
+            if member.joined_at is not None and member.joined_at < three_months_ago
+        ]
+
+        await ctx.send(f"Found {len(long_term_member_ids)} members who joined more than 6 months ago. Beginning to add them to the database in batches...")
+        
+        async with self.bot.pool.acquire() as connection:
+            for i in range(0, len(long_term_member_ids), BATCH_SIZE):
+                batch_ids = [(user_id,) for user_id in long_term_member_ids[i:i+BATCH_SIZE]]
+                
+                # Inserting into the database
+                await connection.executemany(
+                    "INSERT INTO long_term_members2 (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
+                    batch_ids
+                )
+                
+                await ctx.send(f"Added {len(batch_ids)} members to the database (Batch {i//BATCH_SIZE + 1}).")
+                await asyncio.sleep(DELAY)  # Pause to reduce rate of API calls
+            
+        await ctx.send("Finished adding members to the database.")
+
+
 
     @vip()
     @app_commands.command()
