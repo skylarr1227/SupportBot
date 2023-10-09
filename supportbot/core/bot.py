@@ -21,7 +21,7 @@ logging.getLogger().addHandler(PrometheusLoggingHandler())
 
 load_dotenv()
 
-TOKEN = os.environ.get("TOKEN") # this is the bot token
+TOKEN = os.environ.get("TOKEN")
 intents = discord.Intents.default()
 intents.messages = True
 intents.reactions = True

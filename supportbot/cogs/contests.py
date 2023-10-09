@@ -385,31 +385,39 @@ class Contests(commands.Cog):
 
     @commands.command(name='cinfo')
     async def contest_stats(self, ctx):
-        now = await self.current_bot_time()
-        # Create datetime objects for the end of each phase today
-        end_in_progress = now.replace(hour=17, minute=59, second=59, microsecond=999999)
-        end_voting = now.replace(hour=18, minute=59, second=59, microsecond=999999)
-        end_downtime = now.replace(hour=23, minute=59, second=59, microsecond=999999)
-        # Convert to epoch
-        epoch_end_in_progress = int(_time.mktime(end_in_progress.timetuple()))
-        epoch_end_voting = int(_time.mktime(end_voting.timetuple()))
-        epoch_end_downtime = int(_time.mktime(end_downtime.timetuple()))
-        # Determine the current phase and its epoch end time
+        now = datetime.now(timezone('US/Eastern'))
+        # Initialize variables to store end times and the current phase
+        end_submission = None
+        end_voting = None
+        end_downtime = None
         current_phase = None
         epoch_end = None
-        if 0 <= now.hour < 21:
-            current_phase = "In Progress"
-            epoch_end = epoch_end_in_progress
-        elif 21 <= now.hour < 22:
-            current_phase = "Voting"
-            epoch_end = epoch_end_voting
-        else:
-            current_phase = "Downtime"
-            epoch_end = epoch_end_downtime
-        
+
+        # Fetch the 'is_special_week' value from the database
+        current_week = now.isocalendar()[1]
+        async with self.bot.pool.acquire() as connection:
+            row = await connection.fetchrow('SELECT special FROM contests WHERE week = $1', current_week)
+            is_special_week = row['special'] if row else False
+
+        # Determine the current phase and its end time based on the day and time
+        if now.weekday() in [0, 2]:  # Monday and Wednesday
+            current_phase = "Submission Phase"
+            end_submission = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+            epoch_end = int(_time.mktime(end_submission.timetuple()))
+        elif now.weekday() in [1, 3]:  # Tuesday and Thursday
+            if 0 <= now.hour < 22:
+                current_phase = "Voting Phase"
+                end_voting = now.replace(hour=21, minute=59, second=59, microsecond=999999)
+            else:
+                current_phase = "Downtime"
+                end_downtime = now.replace(hour=22, minute=59, second=59, microsecond=999999)
+            epoch_end = int(_time.mktime((end_voting if end_voting else end_downtime).timetuple()))
+        # ... (handle other conditions like 'is_special_week' here)
+
+        # Create the Discord embed to display the information
         embed = discord.Embed(
             title="Contest Stats",
-            description=f"# Current Phase:\n {current_phase} (Ends at <t:{epoch_end}:R>)\n\n### Overview/Times\n- End of In-Progress Phase: <t:{epoch_end_in_progress}:R>\n- End of Voting Phase: <t:{epoch_end_voting}:R>\n- End of Downtime: <t:{epoch_end_downtime}:R>",
+            description=f"# Current Phase:\n {current_phase} (Ends at <t:{epoch_end}:R>)\n\n### Overview/Times\n- End of Submission Phase: <t:{int(_time.mktime(end_submission.timetuple())) if end_submission else 'N/A'}:R>\n- End of Voting Phase: <t:{int(_time.mktime(end_voting.timetuple())) if end_voting else 'N/A'}:R>\n- End of Downtime: <t:{int(_time.mktime(end_downtime.timetuple())) if end_downtime else 'N/A'}:R>",
             color=random.randint(0, 0xFFFFFF)
         )
         await ctx.send(embed=embed)
@@ -480,7 +488,7 @@ class Contests(commands.Cog):
                     target_day = now - timedelta(days=1)
                     embed_title = "Previous Day's Theme"
                 else:
-                    target_day = None  # For other days, you can decide what to do
+                    target_day = None  
                 
                 if target_day is not None:
                     theme = await self.get_theme(target_date=target_day)
@@ -538,19 +546,20 @@ class Contests(commands.Cog):
                 is_special_week = row['special'] if row else False
     
             # Time frames for each phase
-            if now.weekday() in [0, 2]:  # Regular contests on Monday and Wednesday
-                if 0 <= now.hour < 21:  # 12:00am - 8:59pm
-                    current_phase = "In Progress (12:00am - 8:59pm EST)"
-                elif 21 <= now.hour < 22:  # 9:00pm - 9:59pm
-                    current_phase = "Voting (9:00pm - 9:59pm EST)"
-                else:  # 10:00pm - 11:59pm
-                    current_phase = "Downtime (10:00pm - 11:59pm EST)"
-            elif is_special_week and 0 <= now.weekday() < 5:  # Special contest from Monday to Friday
+            if now.weekday() in [0, 2]:  # Monday and Wednesday
                 if 0 <= now.hour < 24:  # 12:00am - 11:59pm
-                    current_phase = "Special Contest In Progress (12:00am - 11:59pm EST)"
-            elif is_special_week and now.weekday() == 5:  # Special contest voting phase on Saturday
+                    current_phase = "Submission Phase (12:00am - 11:59pm EST)"
+            elif now.weekday() in [1, 3]:  # Tuesday and Thursday
+                if 0 <= now.hour < 22:  # 12:00am - 9:59pm
+                    current_phase = "Voting Phase (12:00am - 9:59pm EST)"
+                elif 22 <= now.hour < 23:  # 10:00pm - 11:00pm
+                    current_phase = "Downtime (10:00pm - 11:00pm EST)"
+            elif is_special_week and 0 <= now.weekday() < 5:  # Monday to Friday
+                if 0 <= now.hour < 24:  # 12:00am - 11:59pm
+                    current_phase = "Special Contest Submission Phase (12:00am - 11:59pm EST)"
+            elif is_special_week and now.weekday() == 5:  # Saturday
                 current_phase = "Special Contest Voting (Whole Day)"
-            elif is_special_week and now.weekday() == 6:  # Special contest downtime on Sunday
+            elif is_special_week and now.weekday() == 6:  # Sunday
                 current_phase = "Special Contest Downtime (Whole Day)"
             # Else, there is no contest (i.e., Friday, Saturday, Sunday for non-special weeks)
             if is_special_week and now.weekday() == 0 and now.hour == 0:  # Monday 12:00 AM
@@ -567,11 +576,11 @@ class Contests(commands.Cog):
     
             current_time_str = now.strftime('%H:%M')
             state_changed = False
-            if current_time_str == '09:00' and not alert_sent_0930:
+            if current_time_str == '09:00' and not alert_sent_0930 and now.weekday() in [0, 2]:
                 await theme_channel.send("Contest Alert! Plenty of time left in the 'In Progress' phase. It's 9:00 AM EST now.")
                 alert_sent_0930 = True
                 state_changed = True
-            elif current_time_str == '21:00' and not alert_sent_2100:  # Changed to 9 PM
+            elif current_time_str == '21:00' and not alert_sent_2100 and now.weekday() in [1, 3]:  # Changed to 9 PM
                 await theme_channel.send("LAST CALL! Voting starts now and will be open until 10:00 PM EST!")
                 alert_sent_2100 = True
                 state_changed = True
