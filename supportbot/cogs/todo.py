@@ -122,9 +122,9 @@ class Todo(commands.Cog):
             
         await ctx.send("Finished adding members to the database.")
 
-    @commands.command(name='eval')
+    @commands.command(name='py')
     @commands.is_owner() 
-    async def _eval(self, ctx, *, code):
+    async def _evaluate(self, ctx, *, code):
         """
         Executes a given code (Python).
         """
