@@ -67,57 +67,49 @@ class Contests(commands.Cog):
         self.tasks.append(self.bot.loop.create_task(self.count_votes()))
         self.THEME_CHANNEL_ID = 123
         self.prev_day_theme_message = None
-    ### Helper Functions
     
+    ### Helper Functions
 
     async def get_current_phase(self):
         """
         Get the current phase of the contest based on the bot's internal time and settings.
         """
-        now = await self.current_bot_time()
+        now = datetime.now(timezone('US/Eastern'))
         current_phase = "Unknown"
 
         # Fetch the 'is_special_week' value from the database
+        current_week = now.isocalendar()[1]
         async with self.bot.pool.acquire() as connection:
-            current_week = now.isocalendar()[1]
             row = await connection.fetchrow('SELECT special FROM contests WHERE week = $1', current_week)
             is_special_week = row['special'] if row else False
+
+        # Determine the current phase based on the day and time
         if is_special_week:
-            if 0 <= now.weekday() < 5:  # Monday to Friday
+            if 0 <= now.weekday() < 5:
                 current_phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"  # In Progress
                 self.accepting_images = True
                 self.STARTED = now
-            elif now.weekday() == 5:  # Saturday
+            elif now.weekday() == 5:
                 current_phase = "<:vote:1146208634322296923>"  # Voting
                 self.accepting_images = False
-            elif now.weekday() == 6:  # Sunday
+            elif now.weekday() == 6:
                 current_phase = "<:down3:1146208635953873016><:down2:1146208638843748372>"  # Downtime
                 self.accepting_images = False
-        ### Regular Week Schedule 
         else:
-            if now.weekday() == 0:  # Monday
-                current_phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"  # In Progress
-                self.accepting_images = True
-                self.STARTED = now
-            elif now.weekday() == 1:  # Tuesday
-                if 0 <= now.hour < 12:  # 12:00am - 11:59am
+            if now.weekday() in [0, 2]:  # Monday and Wednesday
+                if 0 <= now.hour < 24:
+                    current_phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"  # In Progress
+                    self.accepting_images = True
+                    self.STARTED = now
+            elif now.weekday() in [1, 3]:  # Tuesday and Thursday
+                if 0 <= now.hour < 22:
                     current_phase = "<:vote:1146208634322296923>"  # Voting
                     self.accepting_images = False
                 else:
                     current_phase = "<:down3:1146208635953873016><:down2:1146208638843748372>"  # Downtime
                     self.accepting_images = False
-            elif now.weekday() == 2:  # Wednesday
-                current_phase = "<:PRO2:1146213220546269255><:PRO:1146213269242126367>"  # In Progress
-                self.accepting_images = True
-                self.STARTED = now
-            elif now.weekday() == 3:  # Thursday
-                if 0 <= now.hour < 12:  # 12:00am - 11:59am
-                    current_phase = "<:vote:1146208634322296923>"  # Voting
-                    self.accepting_images = False
-                else:
-                    current_phase = "<:down3:1146208635953873016><:down2:1146208638843748372>"  # Downtime
-                    self.accepting_images = False
-            return current_phase
+        return current_phase
+    
 
     async def current_bot_time(self):
         """Get the current bot time considering offset and acceleration."""
