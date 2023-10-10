@@ -1,6 +1,6 @@
 from supportbot.core.utils import team, vip
 from discord import app_commands, Embed
-from discord.ext import commands
+from discord.ext import commands, menus
 import discord
 import json
 import aiohttp
@@ -8,6 +8,14 @@ from enum import Enum
 from datetime import datetime, timedelta
 import pytz
 import asyncio 
+import os
+from io import StringIO
+import sys
+import traceback
+import textwrap
+import io
+from contextlib import redirect_stdout
+
 
 class Options(Enum):
     Critical = 1
@@ -21,6 +29,35 @@ TODOIST='f8ecdbb2d7c78936b63fc9a1882e74a4ffb19ed9'
 class Todo(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+    async def paginate(self, ctx, pages, start_page=0):
+        """Utility function to paginate embeds"""
+        current_page = start_page
+        msg = await ctx.send(embed=pages[current_page])
+
+        # Add reactions
+        await msg.add_reaction("◀️")
+        await msg.add_reaction("▶️")
+
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"]
+
+        while True:
+            try:
+                reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
+
+                if str(reaction.emoji) == "▶️" and current_page < len(pages) - 1:
+                    current_page += 1
+                elif str(reaction.emoji) == "◀️" and current_page > 0:
+                    current_page -= 1
+
+                await msg.edit(embed=pages[current_page])
+                await msg.remove_reaction(reaction, user)
+
+            except asyncio.TimeoutError:
+                await msg.clear_reactions()
+                break
+
 
     @team()
     @app_commands.command()
@@ -84,6 +121,49 @@ class Todo(commands.Cog):
                 await asyncio.sleep(DELAY)  # Pause to reduce rate of API calls
             
         await ctx.send("Finished adding members to the database.")
+
+    @commands.command(name='eval')
+    @commands.is_owner() 
+    async def _eval(self, ctx, *, code):
+        """
+        Executes a given code (Python).
+        """
+        env = {
+            'bot': self.bot,
+            'ctx': ctx,
+            'channel': ctx.channel,
+            'author': ctx.author,
+            'guild': ctx.guild,
+            'message': ctx.message,
+        }
+        env.update(globals())
+
+        stdout = io.StringIO()
+        to_compile = f'async def func():\n{textwrap.indent(code, "  ")}'
+
+        try:
+            exec(to_compile, env)
+        except Exception as e:
+            return await ctx.send(f'```py\n{e.__class__.__name__}: {e}\n```')
+
+        func = env['func']
+        try:
+            with redirect_stdout(stdout):
+                ret = await func()
+        except Exception as e:
+            value = stdout.getvalue()
+            result = f"{value}{traceback.format_exc()}"
+        else:
+            value = stdout.getvalue()
+            result = f"{value}{ret}"
+
+        # Paginate if the result is too long to fit in a single message
+        pages = [discord.Embed(title=f"Eval Result (Page {i+1}/{len(result)//1000 + 1})", 
+                               description=f"```python\n{page}\n```", 
+                               color=0x42f5f5) 
+                 for i, page in enumerate([result[i:i+1000] for i in range(0, len(result), 1000)])]
+        await self.paginate(ctx, pages)
+
 
     @commands.command()
     @commands.is_owner()
