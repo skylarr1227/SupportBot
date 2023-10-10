@@ -7,18 +7,27 @@ class ThreadExporter(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    def sanitize_name(self, name):
+        """Sanitize the name to be used as a file or directory name."""
+        return re.sub(r'[\\/*?:"<>|]', '-', name)
+
     async def create_directory(self, name):
         """Create a directory with the given name."""
-        if not os.path.exists(name):
-            os.makedirs(name)
+        sanitized_name = self.sanitize_name(name)
+        if not os.path.exists(sanitized_name):
+            os.makedirs(sanitized_name)
 
     async def save_thread_to_markdown(self, thread, directory):
         """Save the messages in a thread to a markdown file."""
+        sanitized_thread_name = self.sanitize_name(thread.name)
+        sanitized_directory_name = self.sanitize_name(directory)
+        
         # Create the markdown file
-        file_name = f"{directory}/{thread.name}.md"
+        file_name = f"{sanitized_directory_name}/{sanitized_thread_name}.md"
         with open(file_name, "w") as f:
             f.write(f"# {thread.name}\n\n")
 
+        # Fetch and write the messages
         async for message in thread.history(oldest_first=True):
             content = message.content.replace('\n', '  \n')
             with open(file_name, "a") as f:
