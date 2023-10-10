@@ -34,7 +34,7 @@ class ThreadExporter(commands.Cog):
             return
         directory_name = f"{channel.category.name}_{channel.name}"
         await self.create_directory(directory_name)
-        threads = channel.threads()
+        threads = channel.threads
         for thread in threads:
             if isinstance(thread, discord.Thread):
                 await self.save_thread_to_markdown(thread, directory_name)
