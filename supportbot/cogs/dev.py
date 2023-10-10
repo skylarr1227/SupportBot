@@ -8,7 +8,9 @@ import asyncio
 from io import StringIO
 import sys
 import traceback
-
+import textwrap
+import io
+from contextlib import redirect_stdout
 from discord import Embed
 
 
@@ -113,26 +115,46 @@ class Dev(commands.Cog):
 
     
 
-    @team()
     @commands.command(name='eval')
     @commands.is_owner() 
     async def _eval(self, ctx, *, code):
         """
         Executes a given code (Python).
         """
-        old_stdout = sys.stdout
-        sys.stdout = output = StringIO()
+        env = {
+            'bot': self.bot,
+            'ctx': ctx,
+            'channel': ctx.channel,
+            'author': ctx.author,
+            'guild': ctx.guild,
+            'message': ctx.message,
+        }
+        env.update(globals())
+
+        stdout = io.StringIO()
+        to_compile = f'async def func():\n{textwrap.indent(code, "  ")}'
+
         try:
-            exec(code)
+            exec(to_compile, env)
         except Exception as e:
-            value = output.getvalue()
-            traceback_message = traceback.format_exc()
-            result = f"{value}\n{traceback_message}\n{str(e)}"
+            return await ctx.send(f'```py\n{e.__class__.__name__}: {e}\n```')
+
+        func = env['func']
+        try:
+            with redirect_stdout(stdout):
+                ret = await func()
+        except Exception as e:
+            value = stdout.getvalue()
+            result = f"{value}{traceback.format_exc()}"
         else:
-            value = output.getvalue()
-            result = value
-        sys.stdout = old_stdout
-        pages = [discord.Embed(title=f"Eval Result (Page {i+1}/{len(result)//1000 + 1})", description=f"```python\n{page}\n```", color=0x42f5f5) for i, page in enumerate([result[i:i+1000] for i in range(0, len(result), 1000)])]
+            value = stdout.getvalue()
+            result = f"{value}{ret}"
+
+        # Paginate if the result is too long to fit in a single message
+        pages = [discord.Embed(title=f"Eval Result (Page {i+1}/{len(result)//1000 + 1})", 
+                               description=f"```python\n{page}\n```", 
+                               color=0x42f5f5) 
+                 for i, page in enumerate([result[i:i+1000] for i in range(0, len(result), 1000)])]
         await self.paginate(ctx, pages)
 
     @team()
