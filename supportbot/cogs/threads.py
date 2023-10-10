@@ -34,9 +34,11 @@ class ThreadExporter(commands.Cog):
             return
         directory_name = f"{channel.category.name}_{channel.name}"
         await self.create_directory(directory_name)
-        async for thread in channel.threads:
+        threads = await channel.threads()
+        for thread in threads:
             if isinstance(thread, discord.Thread):
                 await self.save_thread_to_markdown(thread, directory_name)
+
 
         await ctx.send(f"Exported threads in {channel.mention} to markdown files.")
 
