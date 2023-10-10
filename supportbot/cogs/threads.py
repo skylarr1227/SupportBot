@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import os
 import asyncio
+import re
 
 class ThreadExporter(commands.Cog):
     def __init__(self, bot):
