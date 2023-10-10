@@ -26,22 +26,24 @@ class ThreadExporter(commands.Cog):
 
     @commands.command()
     @commands.is_owner() 
-    async def export_threads(self, ctx, channel: discord.TextChannel):
+    async def export_threads(self, ctx, channel_id: int):
         """Export threads in a forum channel to markdown files."""
-        if not channel.is_text() or not channel.category:
-            await ctx.send("Please specify a valid text channel within a category.")
+        channel = self.bot.get_channel(channel_id)
+        if channel is None or not channel.is_text() or not channel.category:
+            await ctx.send("Please specify a valid text channel ID within a category.")
             return
 
-
+        # Create the main directory
         directory_name = f"{channel.category.name}_{channel.name}"
         await self.create_directory(directory_name)
 
-
+        # Loop through threads and save them
         async for thread in channel.threads:
             if isinstance(thread, discord.Thread):
                 await self.save_thread_to_markdown(thread, directory_name)
 
         await ctx.send(f"Exported threads in {channel.mention} to markdown files.")
+
 
 async def setup(bot):
     await bot.add_cog(ThreadExporter(bot))
