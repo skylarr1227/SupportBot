@@ -595,14 +595,35 @@ class Contests(commands.Cog):
             now = await self.current_bot_time()
             current_date = now.date()
             current_timestamp = int(now.timestamp())
-            if now.hour == 22:
+            current_week = now.isocalendar()[1]
+
+            # Check if it's a special week
+            async with self.bot.pool.acquire() as connection:
+                row = await connection.fetchrow('SELECT special FROM contests WHERE week = $1', current_week)
+                is_special_week = row['special'] if row else False
+
+            # Determine when the voting ends based on the day and special week
+            if is_special_week and now.weekday() == 5:  # Special contest voting day is Saturday
+                voting_end_hour = 23  # Assuming it ends at 11:59 PM on Saturday
+                # Assuming the contest starts at 12:00 AM on Monday for the special week
+                contest_start_time = now.replace(day=now.day - now.weekday(), hour=0, minute=0, second=0, microsecond=0).timestamp()
+            elif now.weekday() in [1, 3]:  # Normal voting days are Tuesday and Thursday
+                voting_end_hour = 21  # Ending at 9 PM based on your new schedule
+                # The contest starts at 12:00 AM two days before (Monday or Wednesday)
+                contest_start_time = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+            else:
+                voting_end_hour = -1  # No voting today
+
+            if now.hour == voting_end_hour:
                 if self.last_winner_announcement_date != current_date:
-                    current_contest_start_time = now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
                     channel = self.bot.get_channel(PUBLIC_VOTING_CHANNEL_ID)
                     theme_channel = self.bot.get_channel(self.THEME_CHANNEL_ID)
+
+                    # Filter artworks for the current contest only
                     async with self.bot.pool.acquire() as connection:
-                        # Filter artworks for today's contest only
-                        rows = await connection.fetch('SELECT submitted_by, message_id FROM artwork WHERE submitted_on >= $1', current_contest_start_time)
+                        rows = await connection.fetch('SELECT submitted_by, message_id FROM artwork WHERE submitted_on >= $1', contest_start_time)
+
+                        # Counting votes and updating the database
                         for row in rows:
                             try:
                                 message = await channel.fetch_message(row['message_id'])
@@ -611,8 +632,9 @@ class Contests(commands.Cog):
                                         await connection.execute('UPDATE artwork SET upvotes = $1 WHERE submitted_by = $2 AND message_id = $3', reaction.count, row['submitted_by'], message.id)
                             except Exception as e:
                                 print(f"Failed to fetch or process message: {e}")
-                        # Fetch top 5 artworks by upvotes for today's contest
-                        top_artworks = await connection.fetch('SELECT submitted_by, upvotes, link FROM artwork WHERE submitted_on >= $1 ORDER BY upvotes DESC, submitted_by ASC', current_contest_start_time)
+
+                        # Fetching and announcing winners
+                        top_artworks = await connection.fetch('SELECT submitted_by, upvotes, link FROM artwork WHERE submitted_on >= $1 ORDER BY upvotes DESC, submitted_by ASC', contest_start_time)
                         if top_artworks:
                             awards = XP_AWARDS.copy()
                             winners = []
