@@ -33,7 +33,7 @@ class UserMetricsCog(commands.Cog):
         #self.loop.create_task(self.update_top_words())
         #self.tasks.append(self.bot.loop.create_task(self.update_top_words()))
         self.tasks.append(self.bot.loop.create_task(self.log_member_status()))
-
+        self.tasks.append(self.bot.loop.create_task(self.update_member_count()))
 
     async def log_member_status(self):
         await self.bot.wait_until_ready()
@@ -276,6 +276,28 @@ class UserMetricsCog(commands.Cog):
             insert_query = lambda: self.bot.supabase.table('user_metrics').insert(payload).execute()
             await loop.run_in_executor(None, insert_query)
             return {'metrics': metrics}
+
+
+    async def update_member_count(self):  
+        guild_id = 774124295026376755  #
+        guild = self.bot.get_guild(guild_id)
+        if guild:
+            member_count = len(guild.members)
+            await self.save_member_count_to_db(member_count)
+        else:
+            print(f"Guild with ID {guild_id} not found")
+        await asyncio.sleep(12 * 3600) 
+
+    async def save_member_count_to_db(self, member_count):
+        async with self.bot.pool.acquire() as connection:
+            try:
+                await connection.execute("""
+                    INSERT INTO metrics (member_count) VALUES ($1);
+                """, member_count)
+                print(f"Updated member count: {member_count}")
+            except Exception as e:  # Replace with a more specific exception if possible
+                print(f"Error updating member count: {e}")
+
 
 
     @team()
