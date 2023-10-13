@@ -1,6 +1,7 @@
 import asyncio
 import calendar
 from datetime import datetime, timedelta
+from typing import Optional
 from pytz import timezone
 from discord.ext import commands
 import discord
@@ -11,7 +12,12 @@ import logging
 import asyncpg
 import random
 import time as _time
-
+from enum import Enum
+from dataclass import dataclass
+try:
+    from supportbot.cogs.contests_util import determine_phase, is_special_week, generate_progress_bar
+except ImportError:
+    print("Import failed, contests_util.py not loaded.")
 
 logger = logging.getLogger('discord')
 logger.setLevel(logging.ERROR)
@@ -30,22 +36,47 @@ if STRIPE_AUTH is None:
 
 
 
+class Weekday(Enum):
+    MONDAY = 0
+    TUESDAY = 1
+    WEDNESDAY = 2
+    THURSDAY = 3
+    FRIDAY = 4
+    SATURDAY = 5
+    SUNDAY = 6
 
-def generate_progress_bar(percentage):
-    filled_emoji = "<:xxp2:1145574506421833769>"
-    last_filled_emoji = "<:xxp:1145574909632839720>"
-    total_slots = 10
-    filled_slots = percentage // 10  # Since each slot is 10%
-    if filled_slots == 10:
-        progress_bar = filled_emoji * 9 + last_filled_emoji
-    elif filled_slots > 0:
-        progress_bar = filled_emoji * (filled_slots - 1) + last_filled_emoji + "╍" * (total_slots - filled_slots)
-    else:
-        progress_bar = "╍" * total_slots
-    return f"{progress_bar} {percentage}%"
+@dataclass
+class TimeRange():
+    start: (Weekday,_time)
+    end: (Weekday,_time)
 
+timedict = {
+  TimeRange(start=(weekday, datetime.time(0, 0, 0)), start=(weekday, datetime.time(23, 59, 59))): weekday
+  for weekday in Weekday
+}
 
+def weekconvert(omgtime:datetime)
+    mapped_weekday: Optional[Weekday] = None
 
+    for time_range, weekday in timedict.items():
+        (start_weekday, start_time) = time_range.start
+        (end_weekday, end_time) = time_range.end
+
+        current_weekday = _time.weekday()
+        current_time = _time.time()
+
+        if current_weekday < start_weekday.value or current_weekday > end_weekday.value:
+            continue
+
+        if current_time < start_time or current_time > end_time:
+            continue
+
+        mapped_weekday = weekday
+        break
+
+    return mapped_weekday
+
+    
 class Contests(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -497,22 +528,19 @@ class Contests(commands.Cog):
 
 
     
-    async def update_phase(self):
+    async def update_phase(self, now):
         """
         Update the current phase of the contest.
         """
         # Get the current phase using the get_current_phase method
-        current_phase = await self.get_current_phase()
+        sp_week = await is_special_week(now)
+        current_phase = await determine_phase(now, sp_week)
         try:
             if self.phase_message:
                 await self.phase_message.edit(content=f"{current_phase}")
         except discord.errors.NotFound:
             print("Error: Message not found. It may have been deleted.")
             
-            
-
-
-
 
     async def check_time(self):
         last_phase = None
@@ -529,30 +557,12 @@ class Contests(commands.Cog):
     
         while True:
             now = datetime.now(timezone('US/Eastern')) + timedelta(hours=self.time_offset) if self.debug else datetime.now(timezone('US/Eastern'))
-            current_phase = None
+            sp_week = await is_special_week(now)
+            current_phase = await determine_phase(now, sp_week)
             
             # Fetching the 'is_special_week' value from the database
             current_week = now.isocalendar()[1]
-            async with self.bot.pool.acquire() as connection:
-                row = await connection.fetchrow('SELECT special FROM contests WHERE week = $1', current_week)
-                is_special_week = row['special'] if row else False
-    
-            # Time frames for each phase
-            if now.weekday() in [0, 2]:  # Monday and Wednesday
-                if 0 <= now.hour < 24:  # 12:00am - 11:59pm
-                    current_phase = "Submission Phase (12:00am - 11:59pm EST)"
-            elif now.weekday() in [1, 3]:  # Tuesday and Thursday
-                if 0 <= now.hour < 22:  # 12:00am - 9:59pm
-                    current_phase = "Voting Phase (12:00am - 9:59pm EST)"
-                elif 22 <= now.hour < 23:  # 10:00pm - 11:00pm
-                    current_phase = "Downtime (10:00pm - 11:00pm EST)"
-            elif is_special_week and 0 <= now.weekday() < 5:  # Monday to Friday
-                if 0 <= now.hour < 24:  # 12:00am - 11:59pm
-                    current_phase = "Special Contest Submission Phase (12:00am - 11:59pm EST)"
-            elif is_special_week and now.weekday() == 5:  # Saturday
-                current_phase = "Special Contest Voting (Whole Day)"
-            elif is_special_week and now.weekday() == 6:  # Sunday
-                current_phase = "Special Contest Downtime (Whole Day)"
+            
             # Else, there is no contest (i.e., Friday, Saturday, Sunday for non-special weeks)
             if is_special_week and now.weekday() == 0 and now.hour == 0:  # Monday 12:00 AM
                 await self.create_special_contest_channel()

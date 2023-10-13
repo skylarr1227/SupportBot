@@ -51,9 +51,25 @@ class UserMetricsCog(commands.Cog):
 
             except Exception as e:
                 logging.error(f"An error occurred in log_member_status: {e}")
+            try:
+                await self.update_member_count()
+            except Exception as e:
+                logging.error(f"An error occurred in log_member_status: {e}")
+            await asyncio.sleep(250)
 
-            await asyncio.sleep(150)
 
+    async def count_member_status(self, guild):
+        online = offline = idle = busy = 0
+        for member in guild.members:
+            if member.status == discord.Status.online:
+                online += 1
+            elif member.status == discord.Status.offline:
+                offline += 1
+            elif member.status == discord.Status.idle:
+                idle += 1
+            elif member.status == discord.Status.dnd: 
+                busy += 1
+        return online, offline, idle, busy
 
     async def insert_ids_to_db(self, user_ids):
         query = '''INSERT INTO dm (user_id) VALUES ($1);'''
