@@ -61,13 +61,14 @@ class StreakCog(commands.Cog):
             return
 
         user_id = message.author.id
+        display_name = message.author.display_name
         current_date = datetime.utcnow().date()
         await self.bot.pool.execute("""
-            INSERT INTO streaks(user_id, message_count, last_message, date)
-            VALUES($1, 1, $2, $3)
+            INSERT INTO streaks(user_id, message_count, last_message, date, display_name)
+            VALUES($1, 1, $2, $3, $4)
             ON CONFLICT(user_id, date)
-            DO UPDATE SET message_count = streaks.message_count + 1, last_message = $2
-        """, user_id, datetime.utcnow(), current_date)
+            DO UPDATE SET message_count = streaks.message_count + 1, last_message = $2, display_name = $4
+        """, user_id, datetime.utcnow(), current_date, display_name)
 
     @tasks.loop(hours=24)
     async def check_streaks(self):
@@ -78,6 +79,7 @@ class StreakCog(commands.Cog):
             message_count = record['message_count']
             streak_count = record['streak_count']
             member = self.bot.get_user(user_id)
+            display_name = member.display_name if member else None
             if member is None:
                 continue
 
@@ -85,7 +87,12 @@ class StreakCog(commands.Cog):
             if message_count >= 5:
                 streak_count += 1
                 await self.update_roles(member, streak_count)
-                await self.bot.pool.execute("INSERT INTO streaks(user_id, streak_count, date) VALUES($1, $2, $3) ON CONFLICT(user_id, date) DO UPDATE SET streak_count = $2", user_id, streak_count, current_date)
+                await self.bot.pool.execute("""
+                    INSERT INTO streaks(user_id, streak_count, date, display_name)
+                    VALUES($1, $2, $3, $4)
+                    ON CONFLICT(user_id, date)
+                    DO UPDATE SET streak_count = $2, display_name = $4
+                """, user_id, streak_count, current_date, display_name)
             else:
                 await self.update_roles(member, 0)
                 await self.bot.pool.execute("INSERT INTO streaks(user_id, streak_count, date) VALUES($1, 0, $3) ON CONFLICT(user_id, date) DO UPDATE SET streak_count = 0", user_id, current_date)
