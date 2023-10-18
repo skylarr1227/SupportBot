@@ -73,6 +73,10 @@ class StreakCog(commands.Cog):
 
         if record:
             last_message_time = record['last_message']
+            # Make last_message_time timezone-naive if it's timezone-aware
+            if last_message_time and last_message_time.tzinfo:
+                last_message_time = last_message_time.replace(tzinfo=None)
+
             message_count = record['message_count']
             # Check if 5 minutes have passed
             if (current_time - last_message_time).seconds < 300:
