@@ -421,7 +421,7 @@ class Contests(commands.Cog):
         async with self.bot.pool.acquire() as connection:
             row = await connection.fetchrow('SELECT special FROM contests WHERE week = $1', current_week)
             is_special_week = row['special'] if row else False
-
+    
         # Determine the current phase and its end time based on the day and time
         if now.weekday() in [0, 2]:  # Monday and Wednesday
             current_phase = "Submission Phase"
