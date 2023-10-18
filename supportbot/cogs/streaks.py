@@ -5,6 +5,14 @@ import asyncio
 from supportbot.core.utils import team, support
 
 
+async def wait_until(dt):
+    """Pause execution until the specified datetime."""
+    now = datetime.utcnow()
+    delta = dt - now
+    seconds = delta.total_seconds()
+    if seconds > 0:
+        await asyncio.sleep(seconds)
+
 class StreakCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -13,9 +21,27 @@ class StreakCog(commands.Cog):
             909558376793505842,
             931252727743410196,
             980877272938602578
-            ]  
-        self.initialize_daily_records.start(at=time(hour=0, minute=1))
-        self.check_streaks.start(at=time(hour=0, minute=5))
+            ]
+        self.bot.loop.create_task(self.initialize_daily_records_loop())
+        self.bot.loop.create_task(self.check_streaks_loop())
+
+    async def initialize_daily_records_loop(self):
+        await self.bot.wait_until_ready()
+        await self.initialize_daily_records()  # Run immediately on startup
+        while not self.bot.is_closed():
+            now = datetime.utcnow()
+            next_run = datetime.combine(now.date(), time(hour=0, minute=1)) + timedelta(days=1)
+            await wait_until(next_run)
+            await self.initialize_daily_records()
+
+    async def check_streaks_loop(self):
+        await self.bot.wait_until_ready()
+        await self.check_streaks()  # Run immediately on startup
+        while not self.bot.is_closed():
+            now = datetime.utcnow()
+            next_run = datetime.combine(now.date(), time(hour=0, minute=5)) + timedelta(days=1)
+            await wait_until(next_run)
+            await self.check_streaks()
 
     @tasks.loop(hours=24)
     async def initialize_daily_records(self):
