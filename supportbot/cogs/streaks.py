@@ -8,7 +8,12 @@ from supportbot.core.utils import team, support
 class StreakCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.channel_ids = [1234567890, 0987654321]  # Replace with your channel IDs
+        self.channel_ids = [
+            774124295524712480,
+            909558376793505842,
+            931252727743410196,
+            980877272938602578
+            ]  
         self.initialize_daily_records.start(at=time(hour=0, minute=1))
         self.check_streaks.start(at=time(hour=0, minute=5))
 
