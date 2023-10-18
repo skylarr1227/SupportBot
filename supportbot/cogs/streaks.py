@@ -63,12 +63,33 @@ class StreakCog(commands.Cog):
         user_id = message.author.id
         display_name = message.author.display_name
         current_date = datetime.utcnow().date()
+
+        # Fetch last message time and message count from database
+        record = await self.bot.pool.fetchrow("""
+            SELECT last_message, message_count FROM streaks WHERE user_id = $1 AND date = $2
+        """, user_id, current_date)
+
+        current_time = datetime.utcnow()
+
+        if record:
+            last_message_time = record['last_message']
+            message_count = record['message_count']
+            # Check if 5 minutes have passed
+            if (current_time - last_message_time).seconds < 300:
+                return
+
         await self.bot.pool.execute("""
             INSERT INTO streaks(user_id, message_count, last_message, date, display_name)
             VALUES($1, 1, $2, $3, $4)
             ON CONFLICT(user_id, date)
             DO UPDATE SET message_count = streaks.message_count + 1, last_message = $2, display_name = $4
-        """, user_id, datetime.utcnow(), current_date, display_name)
+        """, user_id, current_time, current_date, display_name)
+
+        new_message_count = message_count + 1 if record else 1
+        if new_message_count == 5:
+            alert_channel_id = 1164278374445875240  
+            alert_channel = self.bot.get_channel(alert_channel_id)
+            await alert_channel.send(f"{display_name} has reached 5 messages today!")
 
     @tasks.loop(hours=24)
     async def check_streaks(self):
