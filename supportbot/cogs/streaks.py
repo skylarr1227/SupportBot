@@ -43,7 +43,6 @@ class StreakCog(commands.Cog):
             await wait_until(next_run)
             await self.check_streaks()
 
-    @tasks.loop(hours=24)
     async def initialize_daily_records(self):
         current_date = datetime.utcnow().date()
         yesterday = current_date - timedelta(days=1)
@@ -95,7 +94,7 @@ class StreakCog(commands.Cog):
             alert_channel = self.bot.get_channel(alert_channel_id)
             await alert_channel.send(f"{display_name} has reached 5 messages today!")
 
-    @tasks.loop(hours=24)
+
     async def check_streaks(self):
         yesterday = datetime.utcnow().date() - timedelta(days=1)
         records = await self.bot.pool.fetch("SELECT * FROM streaks WHERE date = $1", yesterday)
@@ -124,33 +123,33 @@ class StreakCog(commands.Cog):
 
 
     async def update_roles(self, member, streak):
-        role_ids = [
-            1164160849645158481, # 1
-            1164160866061656195, # 2
-            1164160879554744380, # 3
-            1164160890929696882, # 4
-            1164160915793522741, # 6
-            1164160929152380938, # 7
-            1164160946185457765, # 8
-            1164160967739981865, # 9
-            1164161002200379464, # 11
-            1164161013424345218, # 12 
-            1164161025503924284, # 13 
-            1164161037520605326, # 14
-            1164161058181754950, # 16
-            1164190078218801275, # 17
-            1164190117242617876, # 18
-            1164190128957304922, # 19 
-            1164190152776753254, # 21
-            1164190161895170229, # 22
-            1164190170761924640, # 23
-            1164190183994957824, # 24
-            1164190210280657018, # 26
-            1164190221571739669, # 27
-            1164190238533496853, # 28
-            1164190276865232966 # 29
+        role_ids = {
+            1: 1164160849645158481,
+            2: 1164160866061656195,
+            3: 1164160879554744380,
+            4: 1164160890929696882,
+            6: 1164160915793522741,
+            7: 1164160929152380938,
+            8: 1164160946185457765,
+            9: 1164160967739981865,
+            11: 1164161002200379464,
+            12: 1164161013424345218,
+            13: 1164161025503924284,
+            14: 1164161037520605326,
+            16: 1164161058181754950,
+            17: 1164190078218801275,
+            18: 1164190117242617876,
+            19: 1164190128957304922,
+            21: 1164190152776753254,
+            22: 1164190161895170229,
+            23: 1164190170761924640,
+            24: 1164190183994957824,
+            26: 1164190210280657018,
+            27: 1164190221571739669,
+            28: 1164190238533496853,
+            29: 1164190276865232966
+        }   
 
-            ]  
         milestone_roles = {
             5: 1164160902879248384, 
             10: 1164160989038661724,
@@ -158,20 +157,23 @@ class StreakCog(commands.Cog):
             20: 1164190140613267497,
             25: 1164190200763777034,
             30: 1164190288697364592
-            }  
+        }  
 
-        roles_to_remove = [role for role in member.roles if role.id in role_ids or role.id in milestone_roles.values()]
+        roles_to_remove = [role for role in member.roles if role.id in role_ids.values() or role.id in milestone_roles.values()]
         await member.remove_roles(*roles_to_remove)
-
-        new_role = discord.utils.get(member.guild.roles, id=streak)
-        if new_role:
+    
+        # Add new role based on current streak count
+        new_role_id = role_ids.get(streak)
+        if new_role_id:
+            new_role = discord.utils.get(member.guild.roles, id=new_role_id)
             await member.add_roles(new_role)
-
-        if streak in milestone_roles:
-            milestone_role = discord.utils.get(member.guild.roles, id=milestone_roles[streak])
-            if milestone_role:
-                await member.add_roles(milestone_role)
-
+    
+        # Check if the current streak is a milestone and add milestone role
+        milestone_role_id = milestone_roles.get(streak)
+        if milestone_role_id:
+            milestone_role = discord.utils.get(member.guild.roles, id=milestone_role_id)
+            await member.add_roles(milestone_role)
+    
     @team()
     @commands.command(aliases=['streaks', 'leaderboard'])
     async def streak_leaderboard(self, ctx):
