@@ -84,7 +84,7 @@ class UserMetricsCog(commands.Cog):
     
 
     async def insert_status_to_db(self, online, offline, idle, busy):
-        query = '''INSERT INTO log (Online, Offlinez, Busy, Idle) VALUES ($1, $2, $3, $4);'''
+        query = '''INSERT INTO log (Online, Offline, Busy, Idle) VALUES ($1, $2, $3, $4);'''
         pool = self.bot.pool  
         async with pool.acquire() as conn:
             await conn.execute(query, online, offline, busy, idle)
