@@ -34,6 +34,7 @@ class UserMetricsCog(commands.Cog):
         #self.tasks.append(self.bot.loop.create_task(self.update_top_words()))
         self.tasks.append(self.bot.loop.create_task(self.log_member_status()))
         self.tasks.append(self.bot.loop.create_task(self.update_member_count()))
+        self.count_member_status = 0
 
     async def log_member_status(self):
         #await self.bot.wait_until_ready()
@@ -50,11 +51,12 @@ class UserMetricsCog(commands.Cog):
                 logging.info(f"Logged status: Online={online}, Offline={offline}, Idle={idle}, Busy={busy}")
 
             except Exception as e:
-                logging.error(f"An error occurred in log_member_status: {e}")
+                pass
+                #logging.error(f"An error occurred in log_member_status: {e}")
             try:
                 await self.update_member_count()
             except Exception as e:
-                logging.error(f"An error occurred in log_member_status: {e}")
+                logging.error(f"An error occurred in update member count: {e}")
             await asyncio.sleep(250)
 
 
