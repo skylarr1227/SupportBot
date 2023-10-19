@@ -36,7 +36,7 @@ class UserMetricsCog(commands.Cog):
         self.tasks.append(self.bot.loop.create_task(self.update_member_count()))
 
     async def log_member_status(self):
-        await self.bot.wait_until_ready()
+        #await self.bot.wait_until_ready()
         while not self.bot.is_closed():
             try:
                 guild_id = 774124295026376755
@@ -84,7 +84,7 @@ class UserMetricsCog(commands.Cog):
     
 
     async def insert_status_to_db(self, online, offline, idle, busy):
-        query = '''INSERT INTO log (Online, Offline, Busy, Idle) VALUES ($1, $2, $3, $4);'''
+        query = '''INSERT INTO log (Online, Offlinez, Busy, Idle) VALUES ($1, $2, $3, $4);'''
         pool = self.bot.pool  
         async with pool.acquire() as conn:
             await conn.execute(query, online, offline, busy, idle)
