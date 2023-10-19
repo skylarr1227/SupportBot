@@ -121,7 +121,8 @@ class StreakCog(commands.Cog):
                 """, user_id, streak_count, current_date, display_name)
             else:
                 await self.update_roles(member, 0)
-                await self.bot.pool.execute("INSERT INTO streaks(user_id, streak_count, date) VALUES($1, 0, $3) ON CONFLICT(user_id, date) DO UPDATE SET streak_count = 0", user_id, current_date)
+                await self.bot.pool.execute("INSERT INTO streaks(user_id, streak_count, date) VALUES($1, 0, $2) ON CONFLICT(user_id, date) DO UPDATE SET streak_count = 0", user_id, current_date)
+
 
 
     async def update_roles(self, member, streak):
