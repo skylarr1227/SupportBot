@@ -98,11 +98,13 @@ class StreakCog(commands.Cog):
     async def check_streaks(self):
         yesterday = datetime.utcnow().date() - timedelta(days=1)
         records = await self.bot.pool.fetch("SELECT * FROM streaks WHERE date = $1", yesterday)
+        guild_id = 774124295026376755
+        guild = self.bot.get_guild(guild_id)
         for record in records:
             user_id = record['user_id']
             message_count = record['message_count']
             streak_count = record['streak_count']
-            member = self.bot.get_user(user_id)
+            member = guild.get_member(user_id)
             display_name = member.display_name if member else None
             if member is None:
                 continue
@@ -161,19 +163,19 @@ class StreakCog(commands.Cog):
 
         roles_to_remove = [role for role in member.roles if role.id in role_ids.values() or role.id in milestone_roles.values()]
         await member.remove_roles(*roles_to_remove)
-    
+
         # Add new role based on current streak count
         new_role_id = role_ids.get(streak)
         if new_role_id:
             new_role = discord.utils.get(member.guild.roles, id=new_role_id)
             await member.add_roles(new_role)
-    
+
         # Check if the current streak is a milestone and add milestone role
         milestone_role_id = milestone_roles.get(streak)
         if milestone_role_id:
             milestone_role = discord.utils.get(member.guild.roles, id=milestone_role_id)
             await member.add_roles(milestone_role)
-    
+
     @team()
     @commands.command(aliases=['streaks', 'leaderboard'])
     async def streak_leaderboard(self, ctx):
