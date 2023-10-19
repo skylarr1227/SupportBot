@@ -75,11 +75,12 @@ class StreakCog(commands.Cog):
             # Make last_message_time timezone-naive if it's timezone-aware
             if last_message_time and last_message_time.tzinfo:
                 last_message_time = last_message_time.replace(tzinfo=None)
-
+        
             message_count = record['message_count']
             # Check if 5 minutes have passed
-            if (current_time - last_message_time).seconds < 300:
+            if last_message_time and (current_time - last_message_time).seconds < 300:
                 return
+
 
         await self.bot.pool.execute("""
             INSERT INTO streaks(user_id, message_count, last_message, date, display_name)
