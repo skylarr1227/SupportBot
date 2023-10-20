@@ -45,13 +45,12 @@ class ArtContest(commands.Cog):
         async with self.bot.pool.acquire() as connection:
             config_data_str = await connection.fetchval('SELECT contests FROM settings WHERE id = 1')
         
-        # Deserialize the JSON string into a Python dictionary
-        config_data = json.loads(config_data_str, parse_float=Decimal)
+        config_data = json.loads(config_data_str)
         
-        self.ANNOUNCEMENT_CHANNEL_ID = int(config_data.get('ANNOUNCEMENT_CHANNEL_ID', 0))
-        self.STAFF_CHANNEL_ID = int(config_data.get('STAFF_CHANNEL_ID', 0))
-        self.VOTING_CHANNEL_ID = int(config_data.get('VOTING_CHANNEL_ID', 0))
-        self.UPDATES_CHANNEL = int(config_data.get('UPDATES_CHANNEL', 0))
+        self.ANNOUNCEMENT_CHANNEL_ID = config_data.get('ANNOUNCEMENT_CHANNEL_ID', '0')
+        self.STAFF_CHANNEL_ID = config_data.get('STAFF_CHANNEL_ID', '0')
+        self.VOTING_CHANNEL_ID = config_data.get('VOTING_CHANNEL_ID', '0')
+        self.UPDATES_CHANNEL = config_data.get('UPDATES_CHANNEL', '0')
 
     async def generate_contest_id(self):
         """Generate a unique contest ID and check its uniqueness in the database."""
@@ -89,7 +88,7 @@ class ArtContest(commands.Cog):
             config_data = json.loads(config_data_str)
 
             # Update the specific field
-            config_data[config_name] = channel_id
+            config_data[config_name] = str(channel_id)
 
             # Serialize the updated Python dictionary back into a JSON string
             updated_config_data_str = json.dumps(config_data)
