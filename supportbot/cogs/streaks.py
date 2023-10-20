@@ -5,13 +5,12 @@ import asyncio
 from supportbot.core.utils import team, support
 
 
-async def wait_until(dt):
-    """Pause execution until the specified datetime."""
-    now = datetime.utcnow()
-    delta = dt - now
-    seconds = delta.total_seconds()
-    if seconds > 0:
-        await asyncio.sleep(seconds)
+async def wait_until(timestamp):
+    """Pause execution until the specified timestamp."""
+    now = time.time()
+    delay = timestamp - now
+    if delay > 0:
+        await asyncio.sleep(delay)
 
 class StreakCog(commands.Cog):
     def __init__(self, bot):
@@ -29,8 +28,9 @@ class StreakCog(commands.Cog):
         await self.bot.wait_until_ready()
         await self.initialize_daily_records()  # Run immediately on startup
         while not self.bot.is_closed():
-            now = datetime.utcnow()
-            next_run = datetime.combine(now.date(), time(hour=0, minute=1)) + timedelta(days=1)
+            now = time.time()
+            # Calculate the next run time in Unix timestamp format for the next day at 00:01
+            next_run = now + (86400 - (now % 86400)) + 60
             await wait_until(next_run)
             await self.initialize_daily_records()
 
@@ -38,18 +38,28 @@ class StreakCog(commands.Cog):
         await self.bot.wait_until_ready()
         await self.check_streaks()  # Run immediately on startup
         while not self.bot.is_closed():
-            now = datetime.utcnow()
-            next_run = datetime.combine(now.date(), time(hour=0, minute=5)) + timedelta(days=1)
+            now = time.time()
+            # Calculate the next run time in Unix timestamp format for the next day at 00:05
+            next_run = now + (86400 - (now % 86400)) + 300
             await wait_until(next_run)
             await self.check_streaks()
 
+
     async def initialize_daily_records(self):
-        current_date = datetime.utcnow().date()
-        yesterday = current_date - timedelta(days=1)
+        # Get the start of the day in Unix timestamp format for current_date
+        now = datetime.utcnow()
+        midnight_utc = datetime.combine(now.date(), time(0, 0))
+        current_date = int(midnight_utc.timestamp())
+
+        # Calculate the start of the previous day in Unix timestamp format for yesterday
+        yesterday_midnight_utc = midnight_utc - timedelta(days=1)
+        yesterday = int(yesterday_midnight_utc.timestamp())
+
         records = await self.bot.pool.fetch("SELECT DISTINCT user_id FROM streaks WHERE date = $1 AND streak_count > 0", yesterday)
         for record in records:
             user_id = record['user_id']
             await self.bot.pool.execute("INSERT INTO streaks(user_id, message_count, date) VALUES($1, 0, $2) ON CONFLICT(user_id, date) DO NOTHING", user_id, current_date)
+
 
 
     @commands.Cog.listener()
@@ -61,27 +71,24 @@ class StreakCog(commands.Cog):
 
         user_id = message.author.id
         display_name = message.author.display_name
-        current_date = datetime.utcnow().date()
+
+        # Get the start of the day in Unix timestamp format
+        now = datetime.utcnow()
+        midnight_utc = datetime.combine(now.date(), time(0, 0))
+        current_date = int(midnight_utc.timestamp()) 
 
         # Fetch last message time and message count from database
         record = await self.bot.pool.fetchrow("""
             SELECT last_message, message_count FROM streaks WHERE user_id = $1 AND date = $2
         """, user_id, current_date)
 
-        current_time = datetime.utcnow()
-
+        current_time = int(time.time())
         if record:
             last_message_time = record['last_message']
-            # Make last_message_time timezone-naive if it's timezone-aware
-            if last_message_time and last_message_time.tzinfo:
-                last_message_time = last_message_time.replace(tzinfo=None)
-        
-            message_count = record['message_count']
-            # Check if 5 minutes have passed
-            if last_message_time and (current_time - last_message_time).seconds < 300:
+            if last_message_time and (current_time - last_message_time) < 300:
                 return
 
-
+        message_count = record['message_count'] if record else 0
         await self.bot.pool.execute("""
             INSERT INTO streaks(user_id, message_count, last_message, date, display_name)
             VALUES($1, 1, $2, $3, $4)
@@ -89,15 +96,16 @@ class StreakCog(commands.Cog):
             DO UPDATE SET message_count = streaks.message_count + 1, last_message = $2, display_name = $4
         """, user_id, current_time, current_date, display_name)
 
-        new_message_count = message_count + 1 if record else 1
+        new_message_count = message_count + 1
         if new_message_count == 5:
             alert_channel_id = 1164278374445875240  
             alert_channel = self.bot.get_channel(alert_channel_id)
             await alert_channel.send(f"{display_name} has reached 5 messages today!")
 
 
+
     async def check_streaks(self):
-        yesterday = datetime.utcnow().date() - timedelta(days=1)
+        yesterday = time.time() - 86400
         records = await self.bot.pool.fetch("SELECT * FROM streaks WHERE date = $1", yesterday)
         guild_id = 774124295026376755
         guild = self.bot.get_guild(guild_id)
@@ -109,8 +117,12 @@ class StreakCog(commands.Cog):
             display_name = member.display_name if member else None
             if member is None:
                 continue
-
-            current_date = datetime.utcnow().date()
+            
+            # Get the start of the day in Unix timestamp format for current_date
+            now = time.time()
+            midnight_utc = datetime.utcfromtimestamp(now).replace(hour=0, minute=0, second=0, microsecond=0)
+            current_date = int(midnight_utc.timestamp())
+    
             if message_count >= 5:
                 streak_count += 1
                 await self.update_roles(member, streak_count)
@@ -123,6 +135,7 @@ class StreakCog(commands.Cog):
             else:
                 await self.update_roles(member, 0)
                 await self.bot.pool.execute("INSERT INTO streaks(user_id, streak_count, date) VALUES($1, 0, $2) ON CONFLICT(user_id, date) DO UPDATE SET streak_count = 0", user_id, current_date)
+
 
 
 
