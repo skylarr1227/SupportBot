@@ -162,7 +162,7 @@ class ArtContest(commands.Cog):
             self.is_submission_phase = False
             return
         if message.content.lower() == 'yes':
-            announcement_channel = self.bot.get_channel(self.ANNOUNCEMENT_CHANNEL_ID) 
+            announcement_channel = self.bot.get_channel(int(self.ANNOUNCEMENT_CHANNEL_ID)) 
             await announcement_channel.send(embed=embed)
             await ctx.send("Announcement sent and contest started!")
         else:
