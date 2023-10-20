@@ -40,8 +40,7 @@ class ArtContest(commands.Cog):
         self.staff_channel_id = self.STAFF_CHANNEL_ID
         self.voting_channel_id = self.VOTING_CHANNEL_ID
 
-    async def __cog_ready__(self):
-        await self.load_channels()
+
     
 
     async def load_channels(self):
@@ -50,10 +49,10 @@ class ArtContest(commands.Cog):
 
         config_data = json.loads(config_data_str)
 
-        self.ANNOUNCEMENT_CHANNEL_ID = config_data.get('ANNOUNCEMENT_CHANNEL_ID', '0')
-        self.STAFF_CHANNEL_ID = config_data.get('STAFF_CHANNEL_ID', '0')
-        self.VOTING_CHANNEL_ID = config_data.get('VOTING_CHANNEL_ID', '0')
-        self.UPDATES_CHANNEL = config_data.get('UPDATES_CHANNEL', '0')
+        self.ANNOUNCEMENT_CHANNEL_ID = config_data.get('ANNOUNCEMENT_CHANNEL_ID', 0)
+        self.STAFF_CHANNEL_ID = config_data.get('STAFF_CHANNEL_ID', 0)
+        self.VOTING_CHANNEL_ID = config_data.get('VOTING_CHANNEL_ID', 0)
+        self.UPDATES_CHANNEL = config_data.get('UPDATES_CHANNEL', 0)
 
     async def generate_contest_id(self):
         """Generate a unique contest ID and check its uniqueness in the database."""
@@ -311,4 +310,6 @@ class ArtContest(commands.Cog):
 
 # Initialize the cog
 async def setup(bot):
-    await bot.add_cog(ArtContest(bot))
+  cog = ArtContest(bot)
+  await bot.add_cog(cog)
+  await cog.load_channels()
