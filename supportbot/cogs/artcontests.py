@@ -203,11 +203,16 @@ class ArtContest(commands.Cog):
 #
 
     async def create_artwork(self, link, submitted_by, message_id):
-        """Insert a new artwork submission into the database."""
+        """
+        Insert a new artwork submission into the database.
+        """
+        submitted_on = int(time.time())  # Get the current epoch time
+        contest_id = self.current_contest_id  # Get the current contest ID
         async with self.bot.pool.acquire() as connection:
             await connection.execute("""
-                INSERT INTO artwork (link, submitted_by, message_id) VALUES ($1, $2, $3)
-            """, link, submitted_by, message_id)
+                INSERT INTO artwork (link, submitted_by, message_id, submitted_on, contest_id) VALUES ($1, $2, $3, $4, $5)
+            """, link, submitted_by, message_id, submitted_on, contest_id)
+
 
 
     @commands.Cog.listener()
