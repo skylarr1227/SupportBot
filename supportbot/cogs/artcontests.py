@@ -235,7 +235,7 @@ class ArtContest(commands.Cog):
                 link = message.attachments[0].url
                 
                 # Post the artwork in the staff channel for review
-                staff_channel = self.bot.get_channel(self.staff_channel_id)
+                staff_channel = self.bot.get_channel(int(self.staff_channel_id))
                 review_message = await staff_channel.send(f"New artwork submission by {message.author.mention}", file=discord.File(link))
                 
                 # Add thumbs-up and thumbs-down reactions for approval and denial
@@ -266,7 +266,7 @@ class ArtContest(commands.Cog):
                     """, reaction.message.id)
 
                     # Post the approved artwork in an embed in the voting channel
-                    voting_channel = self.bot.get_channel(self.voting_channel_id)
+                    voting_channel = self.bot.get_channel(int(self.voting_channel_id))
                     embed = discord.Embed(title="Submitted Artwork", description=f"Approved by <@{user.id}>")
                     embed.set_image(url=record['link'])
                     await voting_channel.send(embed=embed)
@@ -308,7 +308,7 @@ class ArtContest(commands.Cog):
     @tasks.loop(hours=4)
     async def send_periodic_updates(self):
         """Send updates every 4 hours."""
-        channel = self.bot.get_channel(self.ANNOUNCEMENT_CHANNEL_ID)  
+        channel = self.bot.get_channel(int(self.ANNOUNCEMENT_CHANNEL_ID))  
         await channel.send(f"Total Submissions: {self.submission_count}, Approved: {self.approved_count}, Denied: {self.denied_count}")
 
 
