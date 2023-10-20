@@ -7,7 +7,7 @@ import string
 from time import time
 import re
 from supportbot.core.utils import team
-
+import json
 
 def generate_progress_bar(self, percentage):
         filled_emoji = "<:xxp2:1145574506421833769>"
@@ -39,7 +39,7 @@ class ArtContest(commands.Cog):
         self.load_channels()
         self.staff_channel_id = self.STAFF_CHANNEL_ID
         self.voting_channel_id = self.VOTING_CHANNEL_ID
-        
+
     async def load_channels(self):
         async with self.bot.pool.acquire() as connection:
             config_data = await connection.fetchval('SELECT contests FROM settings WHERE id = 1')
@@ -60,17 +60,12 @@ class ArtContest(commands.Cog):
             if exists == 0:
                 unique = True
         return contest_id
-
+    
     @team()
     @commands.command()
     async def config(self, ctx, config_name: str, channel_id: int):
         """
         Update a channel ID in the configuration.
-
-        Args:
-            ctx: The command context.
-            config_name: The name of the configuration item to update.
-            channel_id: The new channel ID.
         """
         # Convert the config_name to uppercase
         config_name = config_name.upper()
@@ -83,16 +78,22 @@ class ArtContest(commands.Cog):
 
         async with self.bot.pool.acquire() as connection:
             # Fetch existing data
-            config_data = await connection.fetchval('SELECT contests FROM settings WHERE id = 1')
+            config_data_str = await connection.fetchval('SELECT contests FROM settings WHERE id = 1')
+
+            # Deserialize the JSON string into a Python dictionary
+            config_data = json.loads(config_data_str)
 
             # Update the specific field
             config_data[config_name] = channel_id
 
+            # Serialize the updated Python dictionary back into a JSON string
+            updated_config_data_str = json.dumps(config_data)
+
             # Update the database
-            await connection.execute('UPDATE settings SET contests = $1 WHERE id = 1', config_data)
+            await connection.execute('UPDATE settings SET contests = $1 WHERE id = 1', updated_config_data_str)
 
         # Reload the configuration
-        await self.load_channels()
+        await self.load_channels()  # Added 'await' here
         await ctx.send(f"Configuration {config_name} updated successfully.")
 
 
