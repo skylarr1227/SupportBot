@@ -4,7 +4,7 @@ import asyncio
 import asyncpg
 import random
 import string
-from time import time
+import time
 import re
 from supportbot.core.utils import team
 import json
@@ -44,9 +44,9 @@ class ArtContest(commands.Cog):
     async def load_channels(self):
         async with self.bot.pool.acquire() as connection:
             config_data_str = await connection.fetchval('SELECT contests FROM settings WHERE id = 1')
-        
+
         config_data = json.loads(config_data_str)
-        
+
         self.ANNOUNCEMENT_CHANNEL_ID = config_data.get('ANNOUNCEMENT_CHANNEL_ID', '0')
         self.STAFF_CHANNEL_ID = config_data.get('STAFF_CHANNEL_ID', '0')
         self.VOTING_CHANNEL_ID = config_data.get('VOTING_CHANNEL_ID', '0')
