@@ -3,7 +3,7 @@ import discord
 from datetime import datetime, timedelta, time
 import asyncio
 from supportbot.core.utils import team, support
-
+import time
 
 async def wait_until(timestamp):
     """Pause execution until the specified timestamp."""
@@ -105,7 +105,10 @@ class StreakCog(commands.Cog):
 
 
     async def check_streaks(self):
-        yesterday = time.time() - 86400
+        now = time.time()
+        midnight_utc = datetime.utcfromtimestamp(now).replace(hour=0, minute=0, second=0, microsecond=0)
+        yesterday = int(midnight_utc.timestamp()) - 86400  # Subtract one day's worth of seconds
+
         records = await self.bot.pool.fetch("SELECT * FROM streaks WHERE date = $1", yesterday)
         guild_id = 774124295026376755
         guild = self.bot.get_guild(guild_id)
@@ -117,12 +120,10 @@ class StreakCog(commands.Cog):
             display_name = member.display_name if member else None
             if member is None:
                 continue
+
             
-            # Get the start of the day in Unix timestamp format for current_date
-            now = time.time()
-            midnight_utc = datetime.utcfromtimestamp(now).replace(hour=0, minute=0, second=0, microsecond=0)
             current_date = int(midnight_utc.timestamp())
-    
+
             if message_count >= 5:
                 streak_count += 1
                 await self.update_roles(member, streak_count)
