@@ -182,6 +182,66 @@ class Tickets(commands.Cog):
         await ctx.send(embed=embed)
 
 
+    @team()
+    @commands.command(name='pull2', aliases=['git_pull2', 'git-pull2'])
+    async def refresh2(self, ctx):
+        COMMAND = "cd /home/ubuntu/s/SupportBot && git pull"
+        addendum = ""
+
+        proc = await asyncio.create_subprocess_shell(
+            COMMAND, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+
+        stdout, stderr = await proc.communicate()
+        stdout = stdout.decode()
+
+        if "no tracking information" in stderr.decode():
+            COMMAND = "cd /home/ubuntu/s/SupportBot && git pull"
+            proc = await asyncio.create_subprocess_shell(
+                COMMAND, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await proc.communicate()
+            stdout = stdout.decode()
+            addendum = "\n\n**Warning: no upstream branch is set.  I automatically pulled from origin/clustered but this may be wrong.  To remove this message and make it dynamic, please run `git branch --set-upstream-to=origin/<branch> <branch>`**"
+
+        embed = discord.Embed(title="Git pull", description="", color=0xFFB6C1)
+
+        if "Fast-forward" not in stdout:
+            if "Already up to date." in stdout:
+                embed.description = "Code is up to date."
+            else:
+                embed.description = "Pull failed: Fast-forward strategy failed.  Look at logs for more details."
+                ctx.bot.logger.warning(stdout)
+            embed.description += addendum
+            await ctx.send(embed=embed)
+            return
+
+        # Determine which cogs were updated
+        cogs = re.findall(r"\ssupportbot\/cogs\/(\w+)", stdout)
+        if cogs:
+            message = await ctx.send(f"Do you want to reload the following cogs? {'`, `'.join(cogs)}\n\nReact with ✅ to confirm or ❌ to cancel.")
+            await message.add_reaction("✅")
+            await message.add_reaction("❌")
+
+            def check(reaction, user):
+                return user == ctx.author and str(reaction.emoji) in ["✅", "❌"]
+            try:
+                reaction, user = await self.bot.wait_for("reaction_add", timeout=60.0, check=check)
+                if str(reaction.emoji) == "✅":
+                    # Reload the updated cogs
+                    for cog in cogs:
+                        try:
+                            await self.bot.reload_extension(f'supportbot.cogs.{cog}')
+                            await ctx.send(f'Cog {cog} has been reloaded.')
+                        except commands.ExtensionError as e:
+                            await ctx.send(f'Failed to reload cog {cog}: {e}')
+                            self.bot.logger.exception(f"Failed to reload cog {cog}")
+                else:
+                    await ctx.send("Cog reload canceled.")
+
+            except asyncio.TimeoutError:
+                await ctx.send("Cog reload request timed out.")
+
 
     #@support()
     #@app_commands.command(name='add_notion')
