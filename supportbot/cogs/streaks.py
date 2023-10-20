@@ -1,6 +1,6 @@
 from discord.ext import commands, tasks
 import discord
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta
 import asyncio
 from supportbot.core.utils import team, support
 import time
@@ -47,13 +47,10 @@ class StreakCog(commands.Cog):
 
     async def initialize_daily_records(self):
         # Get the start of the day in Unix timestamp format for current_date
-        now = datetime.utcnow()
-        midnight_utc = datetime.combine(now.date(), time(0, 0))
+        now = time.time()
+        midnight_utc = datetime.utcfromtimestamp(now).replace(hour=0, minute=0, second=0, microsecond=0)
         current_date = int(midnight_utc.timestamp())
-
-        # Calculate the start of the previous day in Unix timestamp format for yesterday
-        yesterday_midnight_utc = midnight_utc - timedelta(days=1)
-        yesterday = int(yesterday_midnight_utc.timestamp())
+        yesterday = current_date - 86400
 
         records = await self.bot.pool.fetch("SELECT DISTINCT user_id FROM streaks WHERE date = $1 AND streak_count > 0", yesterday)
         for record in records:
@@ -73,9 +70,9 @@ class StreakCog(commands.Cog):
         display_name = message.author.display_name
 
         # Get the start of the day in Unix timestamp format
-        now = datetime.utcnow()
-        midnight_utc = datetime.combine(now.date(), time(0, 0))
-        current_date = int(midnight_utc.timestamp()) 
+        now = time.time()
+        midnight_utc = datetime.utcfromtimestamp(now).replace(hour=0, minute=0, second=0, microsecond=0)
+        current_date = int(midnight_utc.timestamp())
 
         # Fetch last message time and message count from database
         record = await self.bot.pool.fetchrow("""
