@@ -105,34 +105,39 @@ class StreakCog(commands.Cog):
         now = time.time()
         midnight_utc = datetime.utcfromtimestamp(now).replace(hour=0, minute=0, second=0, microsecond=0)
         yesterday = int(midnight_utc.timestamp()) - 86400  # Subtract one day's worth of seconds
-
+    
+        # Fetch records for yesterday
         records = await self.bot.pool.fetch("SELECT * FROM streaks WHERE date = $1", yesterday)
         guild_id = 774124295026376755
         guild = self.bot.get_guild(guild_id)
+        current_date = int(midnight_utc.timestamp())
+        
         for record in records:
             user_id = record['user_id']
             message_count = record['message_count']
-            streak_count = record['streak_count']
+            streak_count = record['streak_count']  # This should fetch the streak count from the previous day
             member = guild.get_member(user_id)
-            display_name = member.display_name if member else None
-            if member is None:
+            if not member:
                 continue
-
-            
-            current_date = int(midnight_utc.timestamp())
-
+            display_name = member.display_name
+    
+            # If the user has sent 5 or more messages yesterday, increment their streak count
             if message_count >= 5:
                 streak_count += 1
-                await self.update_roles(member, streak_count)
-                await self.bot.pool.execute("""
-                    INSERT INTO streaks(user_id, streak_count, date, display_name)
-                    VALUES($1, $2, $3, $4)
-                    ON CONFLICT(user_id, date)
-                    DO UPDATE SET streak_count = $2, display_name = $4
-                """, user_id, streak_count, current_date, display_name)
             else:
-                await self.update_roles(member, 0)
-                await self.bot.pool.execute("INSERT INTO streaks(user_id, streak_count, date) VALUES($1, 0, $2) ON CONFLICT(user_id, date) DO UPDATE SET streak_count = 0", user_id, current_date)
+                # Reset their streak if they haven't sent 5 messages
+                streak_count = 0
+    
+            # Update roles based on the new streak count
+            await self.update_roles(member, streak_count)
+    
+            # Update the database with the new streak count for the current date
+            await self.bot.pool.execute("""
+                INSERT INTO streaks(user_id, streak_count, date, display_name)
+                VALUES($1, $2, $3, $4)
+                ON CONFLICT(user_id, date)
+                DO UPDATE SET streak_count = EXCLUDED.streak_count, display_name = EXCLUDED.display_name
+            """, user_id, streak_count, current_date, display_name)
 
 
 
