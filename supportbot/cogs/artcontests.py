@@ -28,10 +28,8 @@ class ArtContest(commands.Cog):
         self.submission_count = 0
         self.approved_count = 0
         self.denied_count = 0
-        self.staff_channel_id = self.STAFF_CHANNEL_ID
         self.is_submission_phase = False 
         self.is_voting_phase = False
-        self.voting_channel_id = self.VOTING_CHANNEL_ID
         self.user_votes = {}
         self.current_contest_id = None
         self.ANNOUNCEMENT_CHANNEL_ID =  None 
@@ -39,7 +37,9 @@ class ArtContest(commands.Cog):
         self.VOTING_CHANNEL_ID = None
         self.UPDATES_CHANNEL = None
         self.load_channels()
-
+        self.staff_channel_id = self.STAFF_CHANNEL_ID
+        self.voting_channel_id = self.VOTING_CHANNEL_ID
+        
     async def load_channels(self):
         async with self.bot.pool.acquire() as connection:
             config_data = await connection.fetchval('SELECT contests FROM settings WHERE id = 1')
