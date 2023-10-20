@@ -182,12 +182,20 @@ class StreakCog(commands.Cog):
         if new_role_id:
             new_role = discord.utils.get(member.guild.roles, id=new_role_id)
             await member.add_roles(new_role)
+            alert_channel_id = 1164278374445875240  
+            alert_channel = self.bot.get_channel(alert_channel_id)
+            await alert_channel.send(f"{member.display_name} has achieved a streak of {streak} days and gained a new role!")
 
-        # Check if the current streak is a milestone and add milestone role
+    #
         milestone_role_id = milestone_roles.get(streak)
         if milestone_role_id:
             milestone_role = discord.utils.get(member.guild.roles, id=milestone_role_id)
             await member.add_roles(milestone_role)
+
+            # Send an alert for gaining a milestone streak role
+            alert_channel_id = 1164278374445875240  
+            alert_channel = self.bot.get_channel(alert_channel_id)
+            await alert_channel.send(f"🎉 {member.display_name} has reached a milestone of {streak} days and gained a special role!")
 
     @team()
     @commands.command(aliases=['streaks', 'leaderboard'])
