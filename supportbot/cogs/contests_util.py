@@ -42,7 +42,7 @@ class Contest_util(commands.Cog):
             current_phase = "Special Contest Downtime (Whole Day)"
         return current_phase
 
-    def generate_progress_bar(percentage):
+    def generate_progress_bar(self, percentage):
         filled_emoji = "<:xxp2:1145574506421833769>"
         last_filled_emoji = "<:xxp:1145574909632839720>"
         total_slots = 10

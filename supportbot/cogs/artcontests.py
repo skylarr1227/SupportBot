@@ -7,9 +7,20 @@ import string
 from time import time
 import re
 from supportbot.core.utils import team
-from supportbot.cogs.contests_util import generate_progress_bar
 
 
+def generate_progress_bar(self, percentage):
+        filled_emoji = "<:xxp2:1145574506421833769>"
+        last_filled_emoji = "<:xxp:1145574909632839720>"
+        total_slots = 10
+        filled_slots = percentage // 10  # Since each slot is 10%
+        if filled_slots == 10:
+            progress_bar = filled_emoji * 9 + last_filled_emoji
+        elif filled_slots > 0:
+            progress_bar = filled_emoji * (filled_slots - 1) + last_filled_emoji + "╍" * (total_slots - filled_slots)
+        else:
+            progress_bar = "╍" * total_slots
+        return f"{progress_bar} {percentage}%"
 
 class ArtContest(commands.Cog):
     def __init__(self, bot):
