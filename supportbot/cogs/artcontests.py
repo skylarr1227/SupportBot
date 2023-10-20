@@ -42,12 +42,16 @@ class ArtContest(commands.Cog):
 
     async def load_channels(self):
         async with self.bot.pool.acquire() as connection:
-            config_data = await connection.fetchval('SELECT contests FROM settings WHERE id = 1')
-            self.ANNOUNCEMENT_CHANNEL_ID = int(config_data.get('ANNOUNCEMENT_CHANNEL_ID', 0))
-            self.STAFF_CHANNEL_ID = int(config_data.get('STAFF_CHANNEL_ID', 0))
-            self.VOTING_CHANNEL_ID = int(config_data.get('VOTING_CHANNEL_ID', 0))
-            self.UPDATES_CHANNEL = int(config_data.get('UPDATES_CHANNEL', 0))
-    
+            config_data_str = await connection.fetchval('SELECT contests FROM settings WHERE id = 1')
+        
+        # Deserialize the JSON string into a Python dictionary
+        config_data = json.loads(config_data_str)
+        
+        self.ANNOUNCEMENT_CHANNEL_ID = int(config_data.get('ANNOUNCEMENT_CHANNEL_ID', 0))
+        self.STAFF_CHANNEL_ID = int(config_data.get('STAFF_CHANNEL_ID', 0))
+        self.VOTING_CHANNEL_ID = int(config_data.get('VOTING_CHANNEL_ID', 0))
+        self.UPDATES_CHANNEL = int(config_data.get('UPDATES_CHANNEL', 0))
+        
     async def generate_contest_id(self):
         """Generate a unique contest ID and check its uniqueness in the database."""
         unique = False
@@ -93,7 +97,7 @@ class ArtContest(commands.Cog):
             await connection.execute('UPDATE settings SET contests = $1 WHERE id = 1', updated_config_data_str)
 
         # Reload the configuration
-        await self.load_channels()  # Added 'await' here
+        await self.load_channels() 
         await ctx.send(f"Configuration {config_name} updated successfully.")
 
 
