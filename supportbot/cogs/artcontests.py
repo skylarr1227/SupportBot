@@ -37,9 +37,12 @@ class ArtContest(commands.Cog):
         self.STAFF_CHANNEL_ID = None
         self.VOTING_CHANNEL_ID = None
         self.UPDATES_CHANNEL = None
-        self.load_channels()
         self.staff_channel_id = self.STAFF_CHANNEL_ID
         self.voting_channel_id = self.VOTING_CHANNEL_ID
+
+    async def __cog_ready__(self):
+        await self.load_channels()
+    
 
     async def load_channels(self):
         async with self.bot.pool.acquire() as connection:
