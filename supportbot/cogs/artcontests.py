@@ -108,7 +108,7 @@ class ArtContest(commands.Cog):
     async def start_contest(self, ctx):
         """Start a new art contest."""
         # Generate a unique contest ID
-        self.current_contest_id = self.generate_contest_id()
+        self.current_contest_id = await self.generate_contest_id()
         # Ask questions about the contest
         def check(m):
             return m.author == ctx.author and m.channel == ctx.channel
