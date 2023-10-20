@@ -8,6 +8,7 @@ from time import time
 import re
 from supportbot.core.utils import team
 import json
+from decimal import Decimal
 
 def generate_progress_bar(self, percentage):
         filled_emoji = "<:xxp2:1145574506421833769>"
@@ -45,13 +46,13 @@ class ArtContest(commands.Cog):
             config_data_str = await connection.fetchval('SELECT contests FROM settings WHERE id = 1')
         
         # Deserialize the JSON string into a Python dictionary
-        config_data = json.loads(config_data_str)
+        config_data = json.loads(config_data_str, parse_float=Decimal)
         
         self.ANNOUNCEMENT_CHANNEL_ID = int(config_data.get('ANNOUNCEMENT_CHANNEL_ID', 0))
         self.STAFF_CHANNEL_ID = int(config_data.get('STAFF_CHANNEL_ID', 0))
         self.VOTING_CHANNEL_ID = int(config_data.get('VOTING_CHANNEL_ID', 0))
         self.UPDATES_CHANNEL = int(config_data.get('UPDATES_CHANNEL', 0))
-        
+
     async def generate_contest_id(self):
         """Generate a unique contest ID and check its uniqueness in the database."""
         unique = False
